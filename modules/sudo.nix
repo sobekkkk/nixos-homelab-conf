@@ -1,6 +1,8 @@
 { ... }:
 
 {
+  security.pam.services.su.requireWheel = true;
+
   security.sudo = {
     enable = true;
 
