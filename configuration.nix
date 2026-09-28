@@ -9,6 +9,8 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ./modules/packages.nix
+      ./modules/ssh.nix
+      ./modules/firewall.nix
     ];
 
   # Use the systemd-boot EFI boot loader.
@@ -104,29 +106,8 @@
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
-    # SSH
-  services.openssh = {
-    enable = true;
-    openFirewall = false;
-
-    settings = {
-      PermitRootLogin = "no";
-      PasswordAuthentication = false;
-      KbdInteractiveAuthentication = false;
-    };
-  };
 
   # Ouverture explicite du port SSH
-  networking.firewall.allowedTCPPorts = [ 22 ];
-
-  # Clé SSH de l'administrateur
-  users.users.sobek.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOZkSA80pEthN/oaY87sqwDssE5aTAtTl6XGMBNMVa/8 drago@MSI"
-  ];
-
-
-  networking.firewall.enable = true;
-
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you
   # accidentally delete configuration.nix.
