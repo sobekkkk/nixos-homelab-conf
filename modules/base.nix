@@ -13,5 +13,4 @@
     "flakes"
   ];
 
-  security.sudo.wheelNeedsPassword = true;
 }
