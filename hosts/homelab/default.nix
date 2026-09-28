@@ -16,5 +16,9 @@
     ../../modules/hardening.nix
   ];
 
+
+  networking.hostName = "homelab";
+
+
   system.stateVersion = "26.05";
 }

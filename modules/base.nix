@@ -1,7 +1,6 @@
 { ... }:
 
 {
-  networking.hostName = "homelab";
 
   time.timeZone = "Europe/Paris";
 
