@@ -1,0 +1,20 @@
+
+{ ... }:
+
+{
+  imports = [
+    
+./hardware-configuration.nix
+
+    ../../modules/base.nix
+    ../../modules/boot.nix
+    ../../modules/networking.nix
+    ../../modules/users.nix
+    ../../modules/packages.nix
+    ../../modules/ssh.nix
+    ../../modules/firewall.nix
+    ../../modules/hardening.nix
+  ];
+
+  system.stateVersion = "26.05";
+}

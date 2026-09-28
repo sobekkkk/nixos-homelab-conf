@@ -1,3 +1,5 @@
+
+
 {
   description = "Sobek NixOS homelab";
 
@@ -10,7 +12,7 @@
       system = "x86_64-linux";
 
       modules = [
-        ./configuration.nix
+        ./hosts/homelab
       ];
     };
   };
