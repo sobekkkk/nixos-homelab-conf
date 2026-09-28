@@ -10,17 +10,12 @@
     ./modules/ssh.nix
     ./modules/firewall.nix
     ./modules/hardening.nix
+    ./modules/networking.nix
   ];
 
-  # Boot UEFI
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # NetworkManager
-  # Indispensable pour le Wi-Fi du laptop
-  networking.networkmanager.enable = true;
-
-  # Compte administrateur
   users.users.sobek = {
     isNormalUser = true;
     description = "Sobek";
