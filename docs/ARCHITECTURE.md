@@ -42,6 +42,7 @@ ajoutés avec leur propre documentation et leurs propres règles de pare-feu.
 | `ssh.nix` | Service SSH et ses restrictions. |
 | `sudo.nix` / `users.nix` | Comptes locaux et élévation de privilèges. |
 | `auditing.nix` | Journaux persistants et audit des chemins sensibles. |
+| `maintenance.nix` | Nettoyage, optimisation et politique de mise à jour. |
 
 ## Principe d'évolution
 

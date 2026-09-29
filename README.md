@@ -67,6 +67,7 @@ de Git.
 
 - [x] Chiffrement du système, Secure Boot et TPM2 ;
 - [x] Socle réseau et SSH durci ;
+- [x] Audit local et maintenance régulière du store Nix ;
 - [ ] Sauvegardes automatisées vers une destination à choisir ;
 - [ ] Conteneurs ou virtualisation, selon les services retenus ;
 - [ ] Supervision locale et alertes ;
