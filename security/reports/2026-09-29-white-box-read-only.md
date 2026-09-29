@@ -1,14 +1,13 @@
-# Audit white-box en lecture seule — homelab
+# Rapport consolidé des constats de sécurité — homelab
 
 ## Synthèse
 
 La revue n'a confirmé aucune exposition réseau non documentée dans l'état
 capturé. Les contrôles réseau, SSH, LUKS2, Secure Boot, auditd et la garde
-Docker sont présents dans le snapshot. Quatre sujets demandent une validation
-ultérieure : la dépendance de la garde Docker à une interface nommée,
-l'application effective des profils AppArmor, le décalage entre l'entrée de
-démarrage actuelle et celle par défaut, et le déploiement encore incomplet du
-proxy Caddy.
+Docker sont présents dans le snapshot. Ce document réunit les huit constats
+des revues white-box et du scan Codex Security. F-08 ajoute un risque de
+premier démarrage de Portainer ; l'état du volume actuel ne permet pas de
+déterminer si cette fenêtre d'initialisation existe encore.
 
 Cette évaluation est une photographie : elle ne prouve ni la topologie du LAN,
 ni le routeur, ni l'accessibilité depuis Internet.
@@ -19,14 +18,17 @@ ni le routeur, ni l'accessibilité depuis Internet.
 | --- | --- |
 | Date de l'audit | 2026-09-29 |
 | Actif autorisé | `homelab` (`192.168.1.69`) |
-| Mode | Revue white-box, lecture seule par `sobek` |
+| Mode | Revue white-box initiale en lecture seule par `sobek`, puis consolidation statique par Codex |
 | Révision revue | `8bb42ace1f1a6c1b58aa73e3b6bd84dcad59f6f7` |
-| État Git au moment de la revue | propre ; `git fsck` sans erreur d'intégrité |
-| Snapshot | `20260929T172948Z`, généré le `2026-09-29T17:29:48+00:00` |
+| État Git lors de la revue initiale | propre ; `git fsck` sans erreur d'intégrité |
+| Snapshot de la revue initiale | `20260929T172948Z`, généré le `2026-09-29T17:29:48+00:00` |
 
 L'autorisation, le périmètre et les interdictions proviennent de `AGENTS.md`,
-`security/ROE.md` et `security/scope.yml`. Seuls `/etc/nixos` et
-`/var/lib/homelab-security-snapshot/latest` ont été consultés.
+`security/ROE.md` et `security/scope.yml`. La revue initiale a consulté
+`/etc/nixos` et `/var/lib/homelab-security-snapshot/latest`. F-08 provient
+d'une revue statique de la même révision du dépôt, rapprochée de la
+documentation officielle de Portainer. Aucun état supplémentaire du serveur
+n'a été consulté pour ce constat.
 
 Les opérations suivantes n'ont pas été réalisées : `sudo`, accès au socket
 Docker, écriture sur l'hôte, redémarrage, activation NixOS, scan réseau,
@@ -46,6 +48,12 @@ Les sources de configuration principales sont `modules/firewall.nix`,
 `modules/boot.nix`, `modules/hardening.nix` et
 `stacks/uptime-kuma/compose.yaml`. Les preuves brutes ne sont pas ajoutées à ce
 dépôt.
+
+| Constats | Origine | Nature de la preuve |
+| --- | --- | --- |
+| F-01 à F-04 | Revue white-box initiale | Configuration et snapshot en lecture seule |
+| F-05 à F-07 | Revue statique complémentaire | Configuration, documentation et snapshot existant |
+| F-08 | Scan Codex Security `357707ba-e6c2-461c-81a7-7f0b5723f1e9`, rapproché de la documentation Portainer | Configuration et scénario de premier démarrage ; aucun test du service |
 
 ## Surface d'attaque : déclaré et observé
 
@@ -240,6 +248,52 @@ exécutés, les comparer périodiquement aux avis NixOS et éditeurs, puis véri
 qu'une cadence de revue, un propriétaire et un délai maximal de correction sont
 documentés.
 
+### F-08 — Prise possible du premier compte administrateur Portainer
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | candidate |
+| Sévérité potentielle | Moyenne |
+| Confiance | Moyenne |
+| Actif concerné | Portainer TCP/9443, premier compte administrateur et socket Docker |
+
+`modules/containers.nix:18-29` publie `9443:9443`, conserve l'état dans
+`portainer_data` et monte le socket Docker en écriture. La garde de
+`modules/containers.nix:55-73` autorise tout le LAN IPv4
+`192.168.1.0/24`, sans restriction temporaire au poste de l'opérateur.
+`docs/OPERATIONS.md:120-123` prévoit la création du premier compte après le
+démarrage de Portainer.
+
+La [documentation officielle de l'installation initiale de Portainer](https://docs.portainer.io/start/install-ce/server/setup)
+indique que le premier utilisateur créé est administrateur. Sa
+[FAQ sur le délai d'initialisation](https://docs.portainer.io/faqs/installing/your-portainer-instance-has-timed-out-for-security-purposes-error-fix)
+décrit une fenêtre de cinq minutes destinée à empêcher qu'un tiers ne
+configure une instance neuve avant son propriétaire. La
+[documentation de l'API Portainer](https://docs.portainer.io/api/examples)
+décrit également l'initialisation du compte avant l'authentification. Le
+comportement exact de l'image épinglée `2.39.0` n'a pas été testé ici.
+
+Chemin d'attaque conditionnel : avec un volume `portainer_data` vide ou
+réinitialisé, un appareil hostile déjà présent sur le LAN atteint TCP/9443
+pendant la fenêtre de premier démarrage et crée le compte avant l'opérateur.
+Il obtient alors l'administration de Portainer, puis sa capacité Docker proche
+de `root` grâce au socket monté. Le snapshot montre un Portainer actif et le
+port 9443 publié, mais ne démontre **ni** un volume vide **ni** une prise de
+compte réelle. Ce finding ne prouve pas une compromission actuelle.
+
+Mesure proposée : pendant une installation neuve ou une restauration approuvée,
+limiter temporairement TCP/9443 au seul poste d'administration explicitement
+autorisé. Créer et vérifier le compte initial avant d'appliquer la politique
+LAN prévue. Une préinitialisation par un mécanisme Portainer adapté peut aussi
+être envisagée, avec le secret strictement hors Git, hors store Nix et hors
+journaux.
+
+Retest proposé, après autorisation de la maintenance : vérifier la règle
+effective de premier démarrage et confirmer qu'une source LAN non autorisée ne
+peut pas atteindre l'initialisation avant l'opérateur. Consigner l'heure, la
+révision, la règle et le résultat expurgé ; ne pas créer de compte pendant
+l'audit du serveur en service.
+
 ## Risques documentés et limites de preuve
 
 - Les sauvegardes automatisées de Portainer, Caddy et Kuma ne sont pas encore
@@ -256,19 +310,21 @@ documentés.
 
 ## Priorités
 
-1. Vérifier que la garde Docker couvre toute interface pouvant devenir une
+1. Restreindre l'accès au premier démarrage de Portainer au poste de
+   l'opérateur, avant toute installation neuve ou restauration du volume.
+2. Vérifier que la garde Docker couvre toute interface pouvant devenir une
    entrée réseau, avant d'ajouter un service ou une interface.
-2. Ne plus accepter d'exception TLS pour l'administration : vérifier une
+3. Ne plus accepter d'exception TLS pour l'administration : vérifier une
    identité de serveur hors bande durant l'amorçage et retirer TCP/9443 après
    la migration Caddy validée.
-3. Épingler les images de production par digest vérifié, particulièrement celle
+4. Épingler les images de production par digest vérifié, particulièrement celle
    de Portainer qui reçoit le socket Docker.
-4. Définir une cadence de revue des avis de sécurité et un délai maximal de
+5. Définir une cadence de revue des avis de sécurité et un délai maximal de
    correction pour NixOS et les images exécutées.
-5. Restaurer une preuve fiable des profils AppArmor effectivement appliqués.
-6. Avant un redémarrage, confirmer la génération cible et conserver une voie de
+6. Restaurer une preuve fiable des profils AppArmor effectivement appliqués.
+7. Avant un redémarrage, confirmer la génération cible et conserver une voie de
    récupération.
-7. Définir, tester et documenter les sauvegardes des volumes avant d'y stocker
+8. Définir, tester et documenter les sauvegardes des volumes avant d'y stocker
    des données importantes.
 
 ## Conclusion
@@ -276,4 +332,6 @@ documentés.
 Les mécanismes centraux attendus sont observés dans la photographie disponible
 et aucune exposition non documentée n'est confirmée. Les findings restent des
 candidats ou des risques explicitement acceptés tant que les vérifications
-proposées n'ont pas été autorisées et réalisées.
+proposées n'ont pas été autorisées et réalisées. F-08 concerne uniquement une
+future installation ou restauration avec un volume Portainer non initialisé ;
+le rapport ne démontre pas cette condition sur le serveur actuel.
