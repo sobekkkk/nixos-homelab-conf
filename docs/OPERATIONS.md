@@ -8,6 +8,21 @@ systemctl --failed
 sudo cryptsetup status cryptroot
 ```
 
+## Snapshot de sécurité pour l'audit
+
+Après avoir construit et activé une version contenant
+`modules/security-snapshot.nix`, déclencher un snapshot à la demande avec :
+
+```bash
+sudo systemctl start homelab-security-snapshot.service
+ls -l /var/lib/homelab-security-snapshot/latest
+```
+
+Le groupe `homelab-audit` permet à `sobek` de lire uniquement ce snapshot
+curaté. Il ne donne ni `sudo` ni accès au socket Docker. Les snapshots sont
+root-owned, expirent après 14 jours et excluent volontairement les variables
+d'environnement des conteneurs afin de ne pas exposer de secrets.
+
 Pour consulter les journaux du démarrage courant :
 
 ```bash

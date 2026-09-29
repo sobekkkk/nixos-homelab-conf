@@ -1,0 +1,26 @@
+assessment:
+  name: homelab-initial-baseline
+  owner: sobek
+  assets:
+    - name: homelab
+      ipv4: 192.168.1.69
+      ssh_user: sobek
+      approved_tcp_ports:
+        - 22
+        - 443
+        - 9443
+      approved_web_endpoints:
+        - https://192.168.1.69:9443
+      ipv6: null # Add only after the owner explicitly authorises an IPv6 target.
+  prohibited_targets:
+    - router
+    - other_lan_devices
+    - internet_hosts
+  allowed_baseline:
+    - source-review
+    - git-history-secret-scan
+    - read-only-system-inspection
+    - service-version-detection
+    - tls-inspection
+    - passive-web-scan
+    - controlled-non-destructive-vulnerability-checks

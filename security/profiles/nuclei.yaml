@@ -1,0 +1,12 @@
+rate-limit: 5
+bulk-size: 2
+concurrency: 2
+severity:
+  - low
+  - medium
+  - high
+  - critical
+exclude-tags:
+  - dos
+  - fuzz
+no-interactsh: true

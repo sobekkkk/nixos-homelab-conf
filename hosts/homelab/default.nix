@@ -18,6 +18,7 @@
     ../../modules/auditing.nix
     ../../modules/maintenance.nix
     ../../modules/containers.nix
+    ../../modules/security-snapshot.nix
   ];
 
 
