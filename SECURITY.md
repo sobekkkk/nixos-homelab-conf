@@ -7,8 +7,9 @@ que les contrôles fonctionnent.
 ## Système et périmètre
 
 Le dépôt configure une unique machine NixOS personnelle nommée `homelab`. Elle
-sert aujourd'hui de base d'administration et d'expérimentation ; aucun service
-applicatif n'est encore exposé.
+sert aujourd'hui de base d'administration et d'expérimentation. Docker et
+Portainer CE y forment une première plateforme de conteneurs, mais aucun service
+applicatif ou accès Internet n'est encore prévu.
 
 Le périmètre principal comprend :
 
@@ -16,12 +17,13 @@ Le périmètre principal comprend :
 - la chaîne de démarrage Secure Boot, Lanzaboote, TPM2 et LUKS2 ;
 - l'administration locale et SSH du compte `sobek` ;
 - le pare-feu, le durcissement noyau, AppArmor, les journaux et l'audit ;
+- Docker local, sa garde réseau et Portainer CE ;
 - les tâches de maintenance Nix et l'usage interactif de Codex CLI.
 
-La machine est administrée par une seule personne. SSH est le seul service
-réseau attendu et doit rester joignable uniquement depuis le LAN IPv4
-`192.168.1.0/24`. Tout nouveau service, port ou compte élargit le périmètre et
-doit être documenté avant son activation.
+La machine est administrée par une seule personne. SSH et l'interface HTTPS de
+Portainer sont les seuls services réseau attendus. Ils doivent rester joignables
+uniquement depuis le LAN IPv4 `192.168.1.0/24`. Tout nouveau service, port ou
+compte élargit le périmètre et doit être documenté avant son activation.
 
 ## Modèle de menaces et frontières de confiance
 
@@ -37,7 +39,8 @@ seul.
 
 Les principales frontières sont :
 
-1. réseau local vers `sshd`, protégé par nftables et l'authentification par clé ;
+1. réseau local vers `sshd` et Portainer, protégé par nftables, la garde Docker
+   `DOCKER-USER` et l'authentification associée ;
 2. compte `sobek` vers `root`, protégé par PAM et un mot de passe `sudo` ;
 3. configuration Git vers système actif, via évaluation, build et
    `nixos-rebuild` privilégié ;
@@ -45,6 +48,8 @@ Les principales frontières sont :
    TPM2 et PIN ;
 5. outils interactifs, dont Codex, vers fichiers et commandes autorisés par le
    compte qui les lance.
+6. Portainer vers le socket Docker local : cette frontière donne à Portainer une
+   capacité d'administration Docker équivalente à `root` sur l'hôte.
 
 Le modèle détaillé et ses scénarios sont dans
 [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
@@ -62,6 +67,12 @@ Une modification ne doit pas rompre les propriétés suivantes :
 - aucun port entrant ne doit être ouvert globalement par défaut ;
 - une nouvelle exposition réseau doit avoir une source, un port et un besoin
   explicitement documentés ;
+- Docker ne doit pas écouter une API TCP, `sobek` ne doit pas rejoindre le
+  groupe `docker`, et la garde `DOCKER-USER` doit s'activer avant tout
+  conteneur qui publie un port ;
+- Portainer ne doit publier que TCP/9443 en HTTPS, vers le LAN ; les ports 8000,
+  9000, 80 et 443 restent absents tant qu'une décision documentée ne les ajoute
+  pas ;
 - le démarrage normal doit conserver Secure Boot et le déverrouillage LUKS2 par
   TPM2 + PIN, sans retirer les moyens de récupération hors machine ;
 - une configuration non évaluée ou non construite ne doit pas être activée ;
@@ -76,6 +87,8 @@ Une modification ne doit pas rompre les propriétés suivantes :
 Un résultat est pertinent s'il montre un chemin réaliste permettant notamment :
 
 - un accès réseau non prévu ou un contournement de l'authentification SSH ;
+- un port Docker publiquement accessible, un contournement de `DOCKER-USER` ou
+  un accès non autorisé à Portainer / au socket Docker ;
 - une élévation de privilèges depuis une capacité réellement accessible ;
 - l'extraction d'un secret, le déchiffrement hors politique ou la modification
   persistante du démarrage ;
@@ -98,7 +111,7 @@ signalés comme dépendances ou limites, pas supposés sûrs :
 - routeur, Wi-Fi, autres appareils du LAN et poste client d'administration ;
 - sécurité du compte GitHub, d'OpenAI et des fournisseurs de dépendances ;
 - firmware, attaques matérielles invasives et disponibilité physique du serveur ;
-- futurs conteneurs, applications et sauvegardes tant qu'ils ne sont pas ajoutés.
+- futurs services applicatifs et sauvegardes tant qu'ils ne sont pas ajoutés.
 
 Ils redeviennent pertinents lorsqu'une configuration suivie ici leur accorde une
 capacité, un secret ou une exposition susceptible de casser un invariant.
@@ -118,6 +131,11 @@ capacité, un secret ou une exposition susceptible de casser un invariant.
   des données.
 - Une future session Codex peut stocker des jetons sous `~/.codex/auth.json` ; ce
   fichier doit rester hors Git, avec des permissions restrictives.
+- Portainer possède volontairement le socket Docker pour administrer les
+  conteneurs. Son compte administrateur et son volume `portainer_data` sont donc
+  sensibles, et cette capacité ne protège pas contre une compromission du LAN.
+- Les sauvegardes automatisées du volume `portainer_data` et des futurs volumes
+  applicatifs ne sont pas encore définies.
 
 ## Signaler un problème
 

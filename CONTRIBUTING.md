@@ -27,6 +27,8 @@ contribution qui rend le système plus clair, plus sûr ou plus facile à répar
   est concerné.
 - Ne pas ouvrir de port ou ajouter de service public sans l'avoir documenté.
 - Garder les détails personnels et les secrets hors de Git.
+- Pour un stack conteneur, documenter ses ports, ses volumes, ses mises à jour
+  et sa sauvegarde avant son premier déploiement dans Portainer.
 
 Le projet peut évoluer tranquillement : documenter ce qui a été appris compte
 autant que faire fonctionner la machine.

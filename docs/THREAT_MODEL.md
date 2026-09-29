@@ -17,6 +17,9 @@ de secours conservées hors machine.
 flowchart LR
     LAN[Appareil du LAN] -->|SSH par clé| FW[nftables]
     FW --> SSH[sshd]
+    LAN -->|HTTPS 9443| DGUARD[Docker LAN guard]
+    DGUARD --> PORTAINER[Portainer CE]
+    PORTAINER -->|socket Docker| DOCKER[Docker Engine]
     SSH --> USER[compte sobek]
     USER -->|mot de passe sudo| ROOT[root]
     GIT[Dépôt Git / flake] -->|eval + build| REBUILD[nixos-rebuild]
@@ -40,6 +43,7 @@ flowchart LR
 | journald et auditd | Traçabilité locale bornée | `modules/auditing.nix:4-42` |
 | Maintenance Nix | GC/optimisation automatiques, mises à jour manuelles | `modules/maintenance.nix:4-23` |
 | Codex CLI | Assistant interactif sans service permanent | `docs/CODEX.md:3-45` |
+| Docker, garde et Portainer | Plateforme de conteneurs limitée au LAN | `modules/containers.nix` |
 
 ### Ressources et capacités effectives
 
@@ -52,6 +56,7 @@ flowchart LR
 | Démarrage | clés Secure Boot et secret LUKS | PKI sous `/var/lib/sbctl`; token TPM2 avec PCR 0/4/7 | firmware, TPM, opérateur | `modules/boot.nix:9-27` |
 | Assistance Codex | fichiers et commandes de `sobek` | exécution sans `sudo`; jeton éventuel dans `~/.codex/auth.json` | OpenAI/Codex vers session utilisateur | `docs/CODEX.md:23-45` |
 | Traçabilité | journaux locaux | journald 512 Mio/1 mois; auditd 10 × 50 Mio | noyau et services vers disque | `modules/auditing.nix:4-42` |
+| Plateforme de conteneurs | Docker + Portainer | API Docker Unix locale, UI HTTPS TCP/9443 limitée au LAN | `root`, Portainer et appareils LAN | `modules/containers.nix`; `docs/CONTAINERS.md` |
 
 Le démon SSH écoute techniquement sur IPv4 et IPv6. La règle dédiée n'autorise
 que la source LAN IPv4 ; l'efficacité exacte du filtrage IPv6 doit rester un
@@ -82,6 +87,9 @@ point de vérification lors de l'audit, sans supposer une exposition Internet.
   ne doit disposer au départ que des droits de `sobek` ;
 - une personne ayant un accès physique peut modifier ou voler le matériel, sans
   connaître normalement le PIN TPM ni les secrets LUKS.
+- un appareil du LAN peut atteindre Portainer, mais ne doit pas disposer de son
+  compte administrateur ; une exposition routeur ou IPv6 non vérifiée reste un
+  risque externe à confirmer.
 
 ### Invariants et hypothèses
 
@@ -107,6 +115,8 @@ modèle et doit être décrite comme prérequis lorsqu'elle est supposée.
 | Moyenne | Le compte `sobek` obtient `root` sans le mot de passe attendu | compromission du compte plus faille sudo/PAM ou règle future | contrôle complet | wheel unique, mot de passe, `NOSETENV`, `use_pty` | auditer les wrappers SUID et toute future règle sudo (`modules/sudo.nix:4-23`) |
 | Moyenne | Une mise à jour de sécurité reste trop longtemps non appliquée | correctif disponible et cadence manuelle insuffisante | exploitation d'un composant vulnérable | procédure de build/test, rollback NixOS | définir une cadence de revue et une alerte de versions (`modules/maintenance.nix:4-6`) |
 | Moyenne | Les journaux sont épuisés, suspendus ou altérés avant analyse | accès local ou forte production d'événements | perte de visibilité, pas nécessairement compromission directe | quotas journald, rotation auditd, alertes d'espace | tester la rotation et prévoir une supervision/export futur (`modules/auditing.nix:4-42`) |
+| Haute | Un attaquant atteint Portainer ou son compte administrateur et utilise le socket Docker pour contrôler l'hôte | accès LAN/Internet imprévu et compte, vulnérabilité ou session Portainer | contrôle des conteneurs, capacité root indirecte | HTTPS 9443 seulement, LAN guard, aucun groupe Docker pour `sobek`, pas d'API TCP Docker | vérifier la garde `DOCKER-USER`, mot de passe Portainer unique et absence de redirection routeur (`modules/containers.nix`, `docs/CONTAINERS.md`) |
+| Haute | Un port publié par un futur conteneur contourne le pare-feu et devient accessible hors LAN | conteneur publiant un port et règle Docker absente ou contournée | exposition d'un service ou de ses données | chaîne `HOMELAB-DOCKER-GUARD` dans `DOCKER-USER`, démarrage Portainer dépendant de cette garde | contrôler `iptables -S DOCKER-USER` après chaque changement et avant tout accès distant (`modules/containers.nix`) |
 | Basse | Les espaces de noms utilisateur exposent une vulnérabilité noyau locale | exécution locale non privilégiée et faille noyau compatible | élévation locale | AppArmor, sysctl, mises à jour manuelles | conserver l'activation justifiée et réévaluer avec les futurs conteneurs (`modules/hardening.nix:4-12`) |
 | Basse | Le GC supprime une génération attendue pour un ancien retour arrière | génération non référencée âgée de plus de 30 jours | récupération plus longue, sans gain attaquant direct | quatre entrées de boot et racines Nix actives | sauvegarder la configuration et documenter les versions importantes (`modules/boot.nix:14-18`, `modules/maintenance.nix:8-15`) |
 

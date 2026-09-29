@@ -19,6 +19,9 @@ améliorations sont bienvenues.
 - pare-feu nftables sans port ouvert globalement ;
 - AppArmor, paramètres noyau de durcissement, journaux persistants et audit
   local des fichiers sensibles.
+- Docker local, avec Portainer CE comme interface unique des conteneurs ;
+- Portainer disponible uniquement en HTTPS sur le LAN, avec une garde dédiée
+  contre le contournement du pare-feu par les ports Docker publiés.
 
 ## Organisation
 
@@ -34,7 +37,8 @@ et les commandes du quotidien dans [docs/OPERATIONS.md](docs/OPERATIONS.md). La
 configuration et les précautions propres à l'agent sont décrites dans
 [docs/CODEX.md](docs/CODEX.md). Le périmètre de sécurité est défini dans
 [SECURITY.md](SECURITY.md) et les scénarios à auditer dans
-[docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
+[docs/THREAT_MODEL.md](docs/THREAT_MODEL.md). Les règles simples pour les
+conteneurs sont dans [docs/CONTAINERS.md](docs/CONTAINERS.md).
 
 ## Appliquer une modification
 
@@ -71,8 +75,9 @@ de Git.
 - [x] Socle réseau et SSH durci ;
 - [x] Audit local et maintenance régulière du store Nix ;
 - [x] Politique de sécurité et modèle de menaces documentés ;
+- [x] Base Docker et Portainer CE restreints au LAN ;
 - [ ] Sauvegardes automatisées vers une destination à choisir ;
-- [ ] Conteneurs ou virtualisation, selon les services retenus ;
+- [ ] Premier service applicatif, avec données et sauvegarde définies ;
 - [ ] Supervision locale et alertes ;
 - [ ] Revue de sécurité de l'infrastructure avec un périmètre explicite.
 

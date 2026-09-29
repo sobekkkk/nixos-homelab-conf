@@ -22,13 +22,36 @@ sûr.
 
 ## Réseau
 
-Le pare-feu nftables bloque les entrées par défaut. SSH est l'unique service
-accessible et seulement depuis le réseau local de confiance. Les redirections
-TCP ou socket Unix, le transfert d'agent, X11 et les tunnels sont désactivés.
-SSH sert donc à l'administration interactive et aux transferts de fichiers,
-sans devenir un relais vers d'autres services du réseau. L'accès distant, les
-services web et les conteneurs ne sont pas encore exposés : ils seront
-ajoutés avec leur propre documentation et leurs propres règles de pare-feu.
+Le pare-feu nftables bloque les entrées par défaut. SSH est accessible seulement
+depuis le réseau local de confiance. Les redirections TCP ou socket Unix, le
+transfert d'agent, X11 et les tunnels sont désactivés. SSH sert donc à
+l'administration interactive et aux transferts de fichiers, sans devenir un
+relais vers d'autres services du réseau.
+
+Docker publie ses ports après traduction NAT ; ces ports ne passent donc pas
+forcément par les règles `INPUT` classiques. Le service `docker-lan-guard`
+installe une règle dans `DOCKER-USER` : tout port Docker publié est limité au
+LAN IPv4 `192.168.1.0/24` sur `wlp0s20f3`, et les arrivées IPv6 publiées par
+Docker y sont refusées. Il faut mettre à jour cette règle si l'interface réseau
+du serveur change. Il n'y a ni redirection de routeur, ni exposition Internet
+prévue par cette configuration.
+
+## Conteneurs
+
+Le moteur Docker est une brique de l'hôte NixOS ; il ne possède pas d'API TCP.
+`sobek` n'appartient pas au groupe `docker`, car cet accès au socket serait
+équivalent à `root`. Portainer CE est le seul conteneur démarré de manière
+déclarative par NixOS : il sert de point de départ pour gérer les futurs stacks.
+
+Son interface HTTPS est disponible sur `https://192.168.1.69:9443` depuis le
+LAN. Le certificat initial est auto-signé. Les ports 8000 (Edge) et 9000 (HTTP
+historique) ne sont pas publiés. Les données de Portainer vivent dans le volume
+Docker nommé `portainer_data`; elles ne sont pas encore couvertes par une
+sauvegarde automatisée.
+
+Les applications futures seront des stacks Portainer documentés et versionnés
+dans un dépôt privé distinct. Elles ne doivent pas être lancées à la main sur
+l'hôte ou ajouter un port public sans une décision et une revue explicites.
 
 ## Modules NixOS
 
@@ -43,6 +66,7 @@ ajoutés avec leur propre documentation et leurs propres règles de pare-feu.
 | `sudo.nix` / `users.nix` | Comptes locaux et élévation de privilèges. |
 | `auditing.nix` | Journaux persistants et audit des chemins sensibles. |
 | `maintenance.nix` | Nettoyage, optimisation et politique de mise à jour. |
+| `containers.nix` | Docker local, Portainer CE et garde réseau `DOCKER-USER`. |
 
 ## Principe d'évolution
 

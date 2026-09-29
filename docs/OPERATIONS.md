@@ -92,3 +92,39 @@ sudo nixos-rebuild switch --flake .#homelab
 
 Si le réseau ou SSH change, conserver la session en cours et tester une seconde
 connexion avant le `switch`.
+
+## Portainer et Docker
+
+Portainer est volontairement le seul conteneur déclaré par NixOS. Après son
+premier `switch`, ouvrir depuis un appareil du LAN :
+
+```text
+https://192.168.1.69:9443
+```
+
+Le certificat est auto-signé au premier démarrage : vérifier que l'adresse est
+bien celle du serveur, accepter l'avertissement localement puis créer sans
+attendre le premier compte administrateur (mot de passe unique d'au moins
+12 caractères). L'environnement Docker local doit être détecté automatiquement.
+
+Vérifier la plateforme sans donner le socket Docker au compte `sobek` :
+
+```bash
+sudo systemctl status docker docker-lan-guard docker-portainer
+sudo docker ps
+sudo iptables -S DOCKER-USER
+sudo ss -lntp | grep ':9443'
+```
+
+`docker-lan-guard` doit être actif avant `docker-portainer`. La règle
+`HOMELAB-DOCKER-GUARD` limite les ports publiés au LAN ; ne pas la retirer pour
+"faire marcher" un service. Si l'interface réseau ne s'appelle plus
+`wlp0s20f3`, modifier `modules/containers.nix`, construire, tester et activer
+la nouvelle règle avant de publier d'autres ports.
+
+Ne pas activer les ports 80, 443, 8000 ou 9000 par défaut. Un premier service
+doit avoir un compose/stack versionné dans un dépôt privé, ses données et sa
+sauvegarde documentées, puis être déployé depuis Portainer. La mise à jour de
+Portainer consiste à modifier le tag d'image dans `modules/containers.nix`,
+revoir le diff, reconstruire puis vérifier que le volume `portainer_data` est
+toujours présent.

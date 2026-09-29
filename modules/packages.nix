@@ -10,6 +10,7 @@
     curl
     htop
     tree
+    iptables
   ];
 }
 

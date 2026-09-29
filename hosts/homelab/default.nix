@@ -17,6 +17,7 @@
     ../../modules/hardening.nix
     ../../modules/auditing.nix
     ../../modules/maintenance.nix
+    ../../modules/containers.nix
   ];
 
 
