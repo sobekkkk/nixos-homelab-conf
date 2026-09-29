@@ -1,0 +1,189 @@
+# Audit white-box en lecture seule — homelab
+
+## Synthèse
+
+La revue n'a confirmé aucune exposition réseau non documentée dans l'état
+capturé. Les contrôles réseau, SSH, LUKS2, Secure Boot, auditd et la garde
+Docker sont présents dans le snapshot. Quatre sujets demandent une validation
+ultérieure : la dépendance de la garde Docker à une interface nommée,
+l'application effective des profils AppArmor, le décalage entre l'entrée de
+démarrage actuelle et celle par défaut, et le déploiement encore incomplet du
+proxy Caddy.
+
+Cette évaluation est une photographie : elle ne prouve ni la topologie du LAN,
+ni le routeur, ni l'accessibilité depuis Internet.
+
+## Cadre de l'évaluation
+
+| Élément | Valeur |
+| --- | --- |
+| Date de l'audit | 2026-09-29 |
+| Actif autorisé | `homelab` (`192.168.1.69`) |
+| Mode | Revue white-box, lecture seule par `sobek` |
+| Révision revue | `8bb42ace1f1a6c1b58aa73e3b6bd84dcad59f6f7` |
+| État Git au moment de la revue | propre ; `git fsck` sans erreur d'intégrité |
+| Snapshot | `20260929T172948Z`, généré le `2026-09-29T17:29:48+00:00` |
+
+L'autorisation, le périmètre et les interdictions proviennent de `AGENTS.md`,
+`security/ROE.md` et `security/scope.yml`. Seuls `/etc/nixos` et
+`/var/lib/homelab-security-snapshot/latest` ont été consultés.
+
+Les opérations suivantes n'ont pas été réalisées : `sudo`, accès au socket
+Docker, écriture sur l'hôte, redémarrage, activation NixOS, scan réseau,
+authentification répétée, scan web ou test d'exploitation.
+
+## Méthode et éléments de preuve
+
+La configuration déclarée a été corrélée avec les fichiers curatés du
+snapshot : `sockets.txt`, `nftables.txt`, `docker-user-ipv4.txt`,
+`docker-user-ipv6.txt`, `ssh-effective.txt`, `services.txt`,
+`audit-rules.txt`, `apparmor.txt`, `secure-boot.txt`, `boot.txt`, `luks.txt`,
+`docker-version.txt`, `docker-info.txt`, `docker-containers.txt` et
+`docker-runtime.txt`.
+
+Les sources de configuration principales sont `modules/firewall.nix`,
+`modules/ssh.nix`, `modules/containers.nix`, `modules/auditing.nix`,
+`modules/boot.nix`, `modules/hardening.nix` et
+`stacks/uptime-kuma/compose.yaml`. Les preuves brutes ne sont pas ajoutées à ce
+dépôt.
+
+## Surface d'attaque : déclaré et observé
+
+| Domaine | Déclaré | Observé dans le snapshot | Évaluation |
+| --- | --- | --- | --- |
+| SSH | TCP/22, source IPv4 `192.168.1.0/24` | écoute `0.0.0.0:22` et `[::]:22`; nftables n'accepte TCP/22 que depuis le LAN IPv4 | Conforme ; l'écoute IPv6 ne constitue pas à elle seule une autorisation IPv6. |
+| Portainer | TCP/9443, temporairement maintenu durant la migration | Portainer CE 2.39.0 actif, publication `0.0.0.0:9443->9443/tcp` | Conforme à l'exception de migration ; accès direct encore présent. |
+| Proxy / supervision | Caddy doit publier TCP/443 ; Kuma ne doit pas publier de port hôte | aucun écouteur TCP/443, Caddy et Kuma absents ; seul Portainer est présent | Déploiement de supervision non observé. |
+| Ports interdits | pas de 80, 8000, 9000, 3001 ni API Docker TCP | aucun de ces ports n'est en écoute hôte | Conforme dans le snapshot. |
+| Docker | aucune API TCP ; garde `DOCKER-USER` IPv4/IPv6 | chaîne `HOMELAB-DOCKER-GUARD` référencée par les deux chaînes `DOCKER-USER` | Conforme, sous la réserve d'interface décrite ci-dessous. |
+
+## Contrôles positifs vérifiés
+
+- Le pare-feu nftables a une politique `input drop`; la seule règle TCP entrante
+  déclarée est SSH depuis le LAN IPv4.
+- SSH applique `PermitRootLogin no`, `PasswordAuthentication no`,
+  `KbdInteractiveAuthentication no`, `AllowUsers sobek`, `MaxAuthTries 3` et
+  désactive les transferts agent, TCP, X11, socket Unix et tunnels.
+- `auditd`, `systemd-journald`, `docker`, `docker-portainer` et `sshd` sont
+  actifs dans la capture. Les règles d'audit sur NixOS, SSH et les clés Secure
+  Boot sont chargées.
+- Secure Boot est activé, un UKI mesuré est signalé, le support TPM2 est
+  présent, et `cryptroot` est actif en LUKS2 AES-XTS 512 bits.
+- Portainer n'est pas privilégié au sens Docker (`privileged=false`) ; il
+  conserve toutefois, par conception, un montage RW du socket Docker.
+
+## Findings et écarts
+
+### F-01 — Garde Docker liée à une interface nommée
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | candidate |
+| Sévérité potentielle | Haute |
+| Confiance | Moyenne |
+| Actif concerné | Publications Docker, notamment Portainer TCP/9443 |
+
+`modules/containers.nix` et `nftables.txt` montrent que le rejet IPv4 des
+sources hors LAN et le rejet IPv6 des ports Docker sont conditionnés à
+`-i wlp0s20f3`. Une interface supplémentaire ou renommée offrant une entrée
+vers l'hôte pourrait ne pas satisfaire cette condition. Le snapshot ne contient
+pas l'inventaire des interfaces ni la topologie de routage : aucune exposition
+hors LAN n'est donc prouvée.
+
+Impact conditionnel : si un chemin non-LAN arrivait par une autre interface,
+Portainer pourrait être atteignable ; son socket Docker lui donne une capacité
+d'administration de l'hôte proche de root.
+
+Retest proposé, après autorisation : confirmer l'interface d'entrée et les
+règles de filtrage pour chaque interface active, puis vérifier que la chaîne
+Docker refuse les sources non-LAN dans chaque cas.
+
+### F-02 — État d'enforcement AppArmor non établi
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | candidate |
+| Sévérité potentielle | Moyenne |
+| Confiance | Moyenne |
+| Actif concerné | Durcissement des processus locaux et conteneurs |
+
+`modules/hardening.nix` active AppArmor, et la ligne de démarrage capturée
+inclut `apparmor=1`. Toutefois, `apparmor.txt` indique que le module est chargé
+mais que `aa-status` n'a pas pu obtenir la liste des profils. Le snapshot ne
+permet donc pas de démontrer que des profils sont chargés et appliqués. Cela ne
+prouve pas qu'AppArmor soit désactivé.
+
+Retest proposé, après autorisation : identifier la cause de l'échec de
+`aa-status`, puis vérifier les profils en enforce et leur couverture des
+services concernés.
+
+### F-03 — Entrée de démarrage courante différente de l'entrée par défaut
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | candidate |
+| Sévérité potentielle | Basse |
+| Confiance | Haute |
+| Actif concerné | Prévisibilité du prochain démarrage |
+
+`boot.txt` rapporte une entrée courante en génération 21, tandis que l'entrée
+par défaut est la génération 27 datée du 29 septembre. Ce décalage est
+compatible avec un `nixos-rebuild switch` sans redémarrage et ne prouve pas une
+erreur. Le snapshot ne contient pas l'information suffisante pour relier la
+génération des services actifs à la révision Git évaluée.
+
+Retest proposé : avant le prochain redémarrage planifié, comparer la génération
+active, l'entrée par défaut et le diff de configuration prévu; valider le
+démarrage de la génération 27 avec un accès console de récupération disponible.
+
+### F-04 — Proxy Caddy et supervision non déployés dans l'état observé
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | accepted-risk / écart de déploiement |
+| Sévérité potentielle | Basse |
+| Confiance | Haute |
+| Actif concerné | Interface web locale et supervision |
+
+Le compose déclare Caddy sur TCP/443 et Uptime Kuma sans port hôte. Le snapshot
+ne contient cependant qu'un conteneur Portainer et aucune écoute TCP/443. Le
+port direct 9443 demeure la seule interface web. Cette situation est conforme à
+l'exception de migration documentée, limitée au LAN par la garde Docker, mais
+la réduction prévue de surface d'exposition n'est pas encore réalisée.
+
+Retest proposé : après un déploiement approuvé, vérifier l'accès Caddy depuis
+le LAN, l'absence de publication de Kuma et le retrait de TCP/9443 seulement
+lorsque la migration est validée.
+
+## Risques documentés et limites de preuve
+
+- Les sauvegardes automatisées de Portainer, Caddy et Kuma ne sont pas encore
+  définies. C'est un risque de disponibilité documenté, pas une vulnérabilité
+  d'accès démontrée.
+- La capture établit la présence de LUKS2, Secure Boot, UKI mesuré et TPM2,
+  mais pas le contenu d'un token TPM2 ni l'exigence effective d'un PIN.
+- Les services de journalisation et les règles d'audit sont établis, mais le
+  snapshot ne contient ni événements de journal, ni preuve de rétention réelle,
+  ni état des unités en échec.
+- Les blobs Git orphelins signalés par `git fsck` ne sont pas référencés par
+  `HEAD` et n'affectent pas la construction; leur contenu n'a pas été consulté
+  afin d'éviter toute exposition potentielle de données historiques.
+
+## Priorités
+
+1. Vérifier que la garde Docker couvre toute interface pouvant devenir une
+   entrée réseau, avant d'ajouter un service ou une interface.
+2. Restaurer une preuve fiable des profils AppArmor effectivement appliqués.
+3. Planifier et valider la migration Caddy, puis retirer le port direct 9443
+   conformément au modèle de menace.
+4. Avant un redémarrage, confirmer la génération cible et conserver une voie de
+   récupération.
+5. Définir, tester et documenter les sauvegardes des volumes avant d'y stocker
+   des données importantes.
+
+## Conclusion
+
+Les mécanismes centraux attendus sont observés dans la photographie disponible
+et aucune exposition non documentée n'est confirmée. Les findings restent des
+candidats ou des risques explicitement acceptés tant que les vérifications
+proposées n'ont pas été autorisées et réalisées.
