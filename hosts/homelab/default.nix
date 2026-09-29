@@ -15,6 +15,7 @@
     ../../modules/ssh.nix
     ../../modules/firewall.nix
     ../../modules/hardening.nix
+    ../../modules/auditing.nix
   ];
 
 
