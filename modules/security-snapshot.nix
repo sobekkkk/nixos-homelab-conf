@@ -67,6 +67,7 @@ in
         done
       } > "$work/docker-runtime.txt" 2>&1 || true
 
+      chmod 0750 "$work"
       chmod 0640 "$work"/*.txt
       chown root:homelab-audit "$work" "$work"/*.txt
       mv "$work" "${snapshotDirectory}/$snapshot"
