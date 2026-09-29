@@ -155,6 +155,91 @@ Retest proposé : après un déploiement approuvé, vérifier l'accès Caddy dep
 le LAN, l'absence de publication de Kuma et le retrait de TCP/9443 seulement
 lorsque la migration est validée.
 
+### F-05 — Amorçage TLS de Portainer sans identité serveur vérifiable
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | candidate |
+| Sévérité potentielle | Haute |
+| Confiance | Moyenne |
+| Actif concerné | Portainer TCP/9443 et capacité d'administration Docker |
+
+Le snapshot confirme que Portainer est encore publié en TCP/9443. Sa
+configuration déclare une image Portainer reliée au socket Docker
+(`modules/containers.nix:19-29`). La procédure d'amorçage documente un
+certificat auto-signé et demande à l'opérateur d'accepter l'avertissement du
+navigateur avant de créer le premier administrateur
+(`docs/CONTAINERS.md:27-35`, `docs/OPERATIONS.md:120-123`). Cette séquence ne
+fournit pas une identité serveur authentifiée par défaut.
+
+Chemin d'attaque conditionnel : un appareil hostile déjà en position
+d'interception sur le LAN présente un certificat différent ; si l'opérateur
+accepte l'exception, il peut divulguer le mot de passe ou la session Portainer.
+Le compte Portainer peut ensuite administrer Docker grâce au socket monté en
+écriture, ce qui offre une capacité proche de root sur l'hôte. Cette attaque
+nécessite l'interception du trafic et l'acceptation humaine d'une alerte TLS ;
+elle n'est donc pas confirmée par le snapshot.
+
+Retest proposé, sans modification : relever l'empreinte du certificat servi
+par TCP/9443 depuis un poste de confiance et la comparer à une valeur obtenue
+hors bande sur la console du serveur. Confirmer ensuite le retrait de 9443
+lorsque l'autorité Caddy est installée et vérifiée sur les clients approuvés.
+
+### F-06 — Images de conteneurs référencées par tag et non par digest
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | candidate |
+| Sévérité potentielle | Haute |
+| Confiance | Moyenne |
+| Actif concerné | Chaîne d'approvisionnement Portainer, Caddy et Uptime Kuma |
+
+Portainer est déclaré avec le tag `portainer/portainer-ce:2.39.0` et
+`pull = "missing"` (`modules/containers.nix:18-29`). Caddy et Uptime Kuma sont
+également déclarés par tag (`stacks/uptime-kuma/compose.yaml:2-30`) plutôt que
+par digest immuable. Un tag versionné réduit le risque par rapport à `latest`,
+mais ne lie pas cryptographiquement le déploiement à un manifeste d'image
+précis.
+
+Chemin d'attaque conditionnel : lors d'un premier pull ou d'un remplacement
+d'image, une compromission du registre, du compte éditeur ou de la chaîne de
+récupération peut fournir une image différente sous le même tag. Pour
+Portainer, une telle image recevrait le socket Docker et pourrait prendre le
+contrôle de l'hôte. Aucun compromis de registre, pull malveillant ou image
+inattendue n'est démontré dans le snapshot.
+
+Retest proposé, sans pull ni redéploiement : relever les `RepoDigests` des
+images exécutées dans le snapshot ou par inspection Docker en lecture seule,
+puis les comparer aux digests publiés par les éditeurs. Conserver la valeur
+vérifiée dans la revue de changement avant une mise à jour.
+
+### F-07 — Absence de cadence définie de mise à jour de sécurité
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | candidate |
+| Sévérité potentielle | Moyenne |
+| Confiance | Élevée |
+| Actif concerné | NixOS, OpenSSH et images de services exposés au LAN |
+
+Les mises à jour automatiques sont explicitement désactivées
+(`modules/maintenance.nix:4-6`) et les mises à jour de `nixpkgs` restent
+manuelles (`docs/OPERATIONS.md:84-105`). Le modèle de menaces identifie déjà
+le délai d'application des correctifs comme un scénario à risque
+(`docs/THREAT_MODEL.md:124`). Aucun CVE précis ni composant vulnérable actif
+n'a été établi dans cette revue ; l'absence de cadence constitue donc un risque
+opérationnel, non une vulnérabilité confirmée.
+
+Chemin d'attaque conditionnel : après la publication d'un correctif pour un
+service joignable depuis le LAN, une fenêtre de non-mise-à-jour peut permettre
+l'exploitation de la version conservée. L'impact dépendra du composant affecté
+et peut être élevé pour SSH ou Portainer.
+
+Retest proposé, sans changement : relever les versions et digests réellement
+exécutés, les comparer périodiquement aux avis NixOS et éditeurs, puis vérifier
+qu'une cadence de revue, un propriétaire et un délai maximal de correction sont
+documentés.
+
 ## Risques documentés et limites de preuve
 
 - Les sauvegardes automatisées de Portainer, Caddy et Kuma ne sont pas encore
@@ -173,12 +258,17 @@ lorsque la migration est validée.
 
 1. Vérifier que la garde Docker couvre toute interface pouvant devenir une
    entrée réseau, avant d'ajouter un service ou une interface.
-2. Restaurer une preuve fiable des profils AppArmor effectivement appliqués.
-3. Planifier et valider la migration Caddy, puis retirer le port direct 9443
-   conformément au modèle de menace.
-4. Avant un redémarrage, confirmer la génération cible et conserver une voie de
+2. Ne plus accepter d'exception TLS pour l'administration : vérifier une
+   identité de serveur hors bande durant l'amorçage et retirer TCP/9443 après
+   la migration Caddy validée.
+3. Épingler les images de production par digest vérifié, particulièrement celle
+   de Portainer qui reçoit le socket Docker.
+4. Définir une cadence de revue des avis de sécurité et un délai maximal de
+   correction pour NixOS et les images exécutées.
+5. Restaurer une preuve fiable des profils AppArmor effectivement appliqués.
+6. Avant un redémarrage, confirmer la génération cible et conserver une voie de
    récupération.
-5. Définir, tester et documenter les sauvegardes des volumes avant d'y stocker
+7. Définir, tester et documenter les sauvegardes des volumes avant d'y stocker
    des données importantes.
 
 ## Conclusion
