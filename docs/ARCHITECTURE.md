@@ -23,8 +23,11 @@ sûr.
 ## Réseau
 
 Le pare-feu nftables bloque les entrées par défaut. SSH est l'unique service
-accessible et seulement depuis le réseau local de confiance. L'accès distant,
-les services web et les conteneurs ne sont pas encore exposés : ils seront
+accessible et seulement depuis le réseau local de confiance. Les redirections
+TCP ou socket Unix, le transfert d'agent, X11 et les tunnels sont désactivés.
+SSH sert donc à l'administration interactive et aux transferts de fichiers,
+sans devenir un relais vers d'autres services du réseau. L'accès distant, les
+services web et les conteneurs ne sont pas encore exposés : ils seront
 ajoutés avec leur propre documentation et leurs propres règles de pare-feu.
 
 ## Modules NixOS

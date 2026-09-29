@@ -15,12 +15,16 @@
       # Réduction de la surface d'attaque
       X11Forwarding = false;
       AllowAgentForwarding = false;
+      AllowTcpForwarding = "no";
+      AllowStreamLocalForwarding = "no";
+      GatewayPorts = "no";
       PermitUserEnvironment = false;
       PermitTunnel = false;
 
       # Anti brute-force basique
       MaxAuthTries = 3;
       LoginGraceTime = 30;
+      MaxSessions = 2;
 
       # Sessions mortes
       ClientAliveInterval = 300;
