@@ -31,10 +31,10 @@ relais vers d'autres services du réseau.
 Docker publie ses ports après traduction NAT ; ces ports ne passent donc pas
 forcément par les règles `INPUT` classiques. Le service `docker-lan-guard`
 installe une règle dans `DOCKER-USER` : tout port Docker publié est limité au
-LAN IPv4 `192.168.1.0/24` sur `wlp0s20f3`, et les arrivées IPv6 publiées par
-Docker y sont refusées. Il faut mettre à jour cette règle si l'interface réseau
-du serveur change. Il n'y a ni redirection de routeur, ni exposition Internet
-prévue par cette configuration.
+LAN IPv4 `192.168.1.0/24`, quelle que soit l'interface physique d'entrée, et
+les arrivées IPv6 externes sont refusées. Les bridges Docker et la boucle locale
+restent autorisés afin que les services internes puissent communiquer. Il n'y a
+ni redirection de routeur, ni exposition Internet prévue par cette configuration.
 
 ## Conteneurs
 

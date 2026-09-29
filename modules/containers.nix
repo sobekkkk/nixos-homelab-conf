@@ -16,7 +16,10 @@
   virtualisation.oci-containers = {
     backend = "docker";
     containers.portainer = {
-      image = "portainer/portainer-ce:2.39.0";
+      # Tag lisible + digest du manifeste multi-architecture vérifié le
+      # 2026-09-29 auprès du registre Docker Hub. Le digest rend le pull
+      # immuable ; sa mise à jour est une revue de changement explicite.
+      image = "portainer/portainer-ce:2.39.0@sha256:3267f1869e0fa87b843c55f7fd848f9e3001367d053505f4cb8c664e4a997996";
       pull = "missing";
       # Migration temporaire : le port direct reste disponible le temps de
       # déployer puis valider Caddy. Il sera retiré dans l'étape suivante.
@@ -40,7 +43,9 @@
   # Docker publie ses ports après traduction NAT, ce qui contourne les règles
   # INPUT habituelles. Cette garde protège donc la chaîne DOCKER-USER elle-même.
   # Elle limite tout port publié par Docker au LAN IPv4 et refuse toute arrivée
-  # IPv6 sur l'interface réseau actuelle. À adapter si l'interface change.
+  # IPv6 externe. Les interfaces des bridges Docker et la boucle locale restent
+  # autorisées pour ne pas casser les flux internes (dont Caddy -> Portainer).
+  # La règle ne dépend donc pas du nom de l'interface physique de l'hôte.
   systemd.services.docker-lan-guard = {
     description = "Restrict Docker-published ports to the trusted LAN";
     wantedBy = [ "docker.service" ];
@@ -56,8 +61,11 @@
       iptables -w -N HOMELAB-DOCKER-GUARD 2>/dev/null || true
       iptables -w -F HOMELAB-DOCKER-GUARD
       iptables -w -A HOMELAB-DOCKER-GUARD -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
-      iptables -w -A HOMELAB-DOCKER-GUARD -i wlp0s20f3 ! -s 192.168.1.0/24 -j DROP
-      iptables -w -A HOMELAB-DOCKER-GUARD -j RETURN
+      iptables -w -A HOMELAB-DOCKER-GUARD -i lo -j RETURN
+      iptables -w -A HOMELAB-DOCKER-GUARD -i docker0 -j RETURN
+      iptables -w -A HOMELAB-DOCKER-GUARD -i br-+ -j RETURN
+      iptables -w -A HOMELAB-DOCKER-GUARD -s 192.168.1.0/24 -j RETURN
+      iptables -w -A HOMELAB-DOCKER-GUARD -j DROP
       iptables -w -C DOCKER-USER -j HOMELAB-DOCKER-GUARD 2>/dev/null || \
         iptables -w -I DOCKER-USER 1 -j HOMELAB-DOCKER-GUARD
 
@@ -65,8 +73,10 @@
         ip6tables -w -N HOMELAB-DOCKER-GUARD 2>/dev/null || true
         ip6tables -w -F HOMELAB-DOCKER-GUARD
         ip6tables -w -A HOMELAB-DOCKER-GUARD -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
-        ip6tables -w -A HOMELAB-DOCKER-GUARD -i wlp0s20f3 -j DROP
-        ip6tables -w -A HOMELAB-DOCKER-GUARD -j RETURN
+        ip6tables -w -A HOMELAB-DOCKER-GUARD -i lo -j RETURN
+        ip6tables -w -A HOMELAB-DOCKER-GUARD -i docker0 -j RETURN
+        ip6tables -w -A HOMELAB-DOCKER-GUARD -i br-+ -j RETURN
+        ip6tables -w -A HOMELAB-DOCKER-GUARD -j DROP
         ip6tables -w -C DOCKER-USER -j HOMELAB-DOCKER-GUARD 2>/dev/null || \
           ip6tables -w -I DOCKER-USER 1 -j HOMELAB-DOCKER-GUARD
       fi

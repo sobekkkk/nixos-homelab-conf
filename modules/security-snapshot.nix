@@ -54,7 +54,12 @@ in
       capture docker-user-ipv6 ip6tables -S DOCKER-USER
       capture ssh-effective /run/current-system/sw/bin/sshd -T
       capture audit-rules auditctl -l
-      capture apparmor /run/current-system/sw/bin/aa-status
+      # aa-status peut refuser l'énumération selon les permissions de l'ABI
+      # AppArmor. Conserver aussi les deux sources noyau permet de distinguer
+      # un outil limité d'une absence de profils appliqués.
+      capture lsm cat /sys/kernel/security/lsm
+      capture apparmor-status /run/current-system/sw/bin/aa-status
+      capture apparmor-profiles cat /sys/kernel/security/apparmor/profiles
       capture secure-boot sbctl status
       capture boot bootctl status
       capture luks cryptsetup status cryptroot

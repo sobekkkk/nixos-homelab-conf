@@ -7,6 +7,7 @@ adresses de volumes ou données personnelles.
 ## Rapports disponibles
 
 - [Rapport consolidé du 29 septembre 2026](2026-09-29-white-box-read-only.md) : F-01 à F-08, issus des revues white-box et du scan Codex Security.
+- [Remédiation du 29 septembre 2026](2026-09-29-remediation.md) : classifications après revue, correctifs proposés et retests nécessaires.
 
 ## Structure d'un rapport
 

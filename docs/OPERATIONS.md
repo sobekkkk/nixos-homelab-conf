@@ -117,10 +117,14 @@ premier `switch`, ouvrir depuis un appareil du LAN :
 https://192.168.1.69:9443
 ```
 
-Le certificat est auto-signé au premier démarrage : vérifier que l'adresse est
-bien celle du serveur, accepter l'avertissement localement puis créer sans
-attendre le premier compte administrateur (mot de passe unique d'au moins
-12 caractères). L'environnement Docker local doit être détecté automatiquement.
+Le certificat est auto-signé au premier démarrage : cette exception est limitée
+à l'amorçage de Portainer avant le déploiement de Caddy. Depuis un poste de
+confiance, vérifier l'adresse et l'empreinte hors bande avant toute exception,
+puis créer sans attendre le premier compte administrateur (mot de passe unique
+d'au moins 12 caractères). L'environnement Docker local doit être détecté
+automatiquement. Lors d'une recréation du volume `portainer_data`, préparer une
+fenêtre de maintenance et limiter temporairement 9443 au seul poste
+d'administration avant de créer ce compte.
 
 Vérifier la plateforme sans donner le socket Docker au compte `sobek` :
 
@@ -132,14 +136,37 @@ sudo ss -lntp | grep ':9443'
 ```
 
 `docker-lan-guard` doit être actif avant `docker-portainer`. La règle
-`HOMELAB-DOCKER-GUARD` limite les ports publiés au LAN ; ne pas la retirer pour
-"faire marcher" un service. Si l'interface réseau ne s'appelle plus
-`wlp0s20f3`, modifier `modules/containers.nix`, construire, tester et activer
-la nouvelle règle avant de publier d'autres ports.
+`HOMELAB-DOCKER-GUARD` limite les ports publiés au LAN quelle que soit
+l'interface physique ; ne pas la retirer pour "faire marcher" un service. Les
+seuls retours autorisés concernent la boucle locale et les bridges Docker, pour
+préserver les flux internes.
 
 Ne pas activer les ports 80, 443, 8000 ou 9000 par défaut. Un premier service
 doit avoir un compose/stack versionné dans un dépôt privé, ses données et sa
 sauvegarde documentées, puis être déployé depuis Portainer. La mise à jour de
-Portainer consiste à modifier le tag d'image dans `modules/containers.nix`,
-revoir le diff, reconstruire puis vérifier que le volume `portainer_data` est
-toujours présent.
+Portainer consiste à modifier le tag **et le digest** d'image dans
+`modules/containers.nix`, revoir le diff, reconstruire puis vérifier que le
+volume `portainer_data` est toujours présent.
+
+## Cadence de sécurité
+
+Les mises à jour restent manuelles pour préserver une revue humaine de la
+chaîne de démarrage et du réseau, mais elles suivent désormais une cadence
+explicite :
+
+- `sobek` consulte au moins toutes les deux semaines les avis NixOS et les
+  versions publiées de Portainer, Caddy et Uptime Kuma ;
+- un correctif de sécurité connu pour un service exposé au LAN est évalué sous
+  sept jours ; les autres mises à jour sont regroupées dans la revue mensuelle ;
+- chaque mise à jour d'image vérifie le nouveau digest publié par l'éditeur,
+  puis suit `nixos-rebuild test` avant `switch` ;
+- le résultat (mise à jour, report et raison) est noté dans le commit ou dans
+  `DECISIONS.md`, sans y copier de secret.
+
+Les digests actuels ont été vérifiés le 29 septembre 2026 auprès de Docker Hub :
+
+| Service | Référence revue |
+| --- | --- |
+| Portainer CE | `2.39.0@sha256:3267f1869e0fa87b843c55f7fd848f9e3001367d053505f4cb8c664e4a997996` |
+| Caddy | `2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b` |
+| Uptime Kuma | `2.5.5@sha256:c74379ac4509ce2d2c2633f509e67003ee2e45b6e995c5e43fc101f45a0e1fbe` |

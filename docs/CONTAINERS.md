@@ -38,8 +38,10 @@ de compte `docker` pour `sobek`, et pas d'exposition Internet directe.
 
 Les ports publiés par Docker peuvent contourner les règles pare-feu normales.
 `docker-lan-guard` s'exécute avant Portainer et restreint la chaîne Docker
-`DOCKER-USER` au LAN IPv4. Il bloque aussi les arrivées IPv6 vers des ports
-Docker publiés sur l'interface actuelle `wlp0s20f3`.
+`DOCKER-USER` au LAN IPv4, quelle que soit l'interface physique par laquelle
+le trafic arrive. Il bloque aussi les arrivées IPv6 externes vers les ports
+Docker publiés. Les bridges Docker et la boucle locale sont les seules
+exceptions, nécessaires aux communications internes entre conteneurs.
 
 Ce n'est pas une autorisation d'exposer librement des services : un nouveau port
 reste une décision documentée. Les ports 80/443, un nom de domaine, un proxy
