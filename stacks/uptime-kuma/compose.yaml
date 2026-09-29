@@ -7,9 +7,12 @@ services:
     ports:
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+        mode: 0444
     networks:
       - homelab-proxy
       - kuma
@@ -46,3 +49,24 @@ volumes:
     name: uptime-kuma-caddy-config
   uptime_kuma_data:
     name: uptime-kuma-data
+
+configs:
+  caddyfile:
+    content: |
+      {
+        admin off
+      }
+
+      portainer.home.arpa {
+        tls internal
+        reverse_proxy https://portainer:9443 {
+          transport http {
+            tls_insecure_skip_verify
+          }
+        }
+      }
+
+      status.home.arpa {
+        tls internal
+        reverse_proxy uptime-kuma:3001
+      }

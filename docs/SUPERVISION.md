@@ -32,9 +32,9 @@ stacks contenant des secrets ou données personnelles devront aller dans un dép
 privé séparé.
 
 Dans Portainer, créer un stack Git nommé `uptime-kuma` depuis ce dépôt, avec le
-chemin `stacks/uptime-kuma/compose.yaml`. Le déploiement Git est nécessaire pour
-que le `Caddyfile` reste à côté du compose. Vérifier ensuite que `caddy` et
-`uptime-kuma` sont *running*.
+chemin `stacks/uptime-kuma/compose.yaml`. Le Caddyfile est intégré au compose
+comme configuration Docker, donc aucun montage relatif ni fichier séparé n'est
+nécessaire. Vérifier ensuite que `caddy` et `uptime-kuma` sont *running*.
 
 L'interface sera disponible à :
 
