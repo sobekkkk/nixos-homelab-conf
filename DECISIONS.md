@@ -35,6 +35,14 @@ peut modifier le boot, le réseau ou les images. En contrepartie, une revue
 bihebdomadaire et des délais maximums sont désormais documentés dans
 `docs/OPERATIONS.md`.
 
+### Propriété du dépôt NixOS
+
+`/etc/nixos` est confié à `sobek` pour que les opérations Git ordinaires ne
+créent plus un mélange de fichiers `root` et `sobek`, qui empêchait les mises à
+jour. Cette propriété ne rend pas un changement actif : seul `sudo
+nixos-rebuild` peut l'appliquer. La revue du diff et le mot de passe restent la
+frontière entre l'édition de la source et l'activation système.
+
 ### Ce qui reste volontairement différé
 
 - Caddy/Uptime Kuma ne sont pas encore déployés : enlever 9443 avant que le

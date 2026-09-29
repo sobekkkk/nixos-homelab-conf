@@ -33,9 +33,11 @@ ajouté à la configuration NixOS, au dépôt Git ou à l'historique du shell.
 - garder les opérations privilégiées, le rebuild et le reboot sous contrôle
   humain explicite.
 
-Le dépôt `/etc/nixos` reste protégé par root. Pour les changements importants,
-l'agent peut travailler dans un clone appartenant à `sobek`, puis le diff est
-relu avant d'être appliqué à la configuration système.
+Le dépôt `/etc/nixos` appartient à `sobek` afin que Git puisse mettre à jour la
+configuration sans mélange de permissions. Cela ne donne pas le droit d'activer
+un changement : `nixos-rebuild` reste une opération `sudo`, avec revue du diff
+et mot de passe. Pour les changements importants, l'agent peut aussi travailler
+dans un clone appartenant à `sobek`, puis le diff est relu avant activation.
 
 ## Identifiants
 
