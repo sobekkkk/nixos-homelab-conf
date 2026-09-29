@@ -28,6 +28,13 @@ sortie `aa-status` et la liste noyau des profils séparément. La prochaine
 capture permettra de dire si les profils sont réellement appliqués ; cette
 décision améliore la preuve sans prétendre qu'un profil absent existe.
 
+Le retest du 29 septembre a confirmé une liste de profils vide. Les profils
+distribués par `apparmor-profiles` ne ciblent pas les chemins immuables du Nix
+store ni Portainer/Docker. Les charger au hasard serait du durcissement décoratif
+et pourrait bloquer des services. F-02 reste donc ouvert : une phase dédiée
+créera des profils par service, d'abord en `complain`, puis en `enforce` après
+lecture des refus et test de fonctionnement.
+
 ### Mises à jour contrôlées
 
 Les mises à jour automatiques restent désactivées : une mise à jour non revue

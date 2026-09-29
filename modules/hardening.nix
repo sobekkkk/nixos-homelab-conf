@@ -1,7 +1,10 @@
 { ... }:
 
 {
-  # AppArmor / LSM
+  # AppArmor est activé comme LSM. Aucun profil générique n'est chargé ici :
+  # les profils de distribution ne correspondent pas aux chemins Nix store ni
+  # aux conteneurs. Chaque profil futur doit être testé en mode complain avant
+  # son passage explicite en enforce.
   security.apparmor.enable = true;
 
   # Nécessaire pour Nix sandbox et futurs conteneurs rootless.

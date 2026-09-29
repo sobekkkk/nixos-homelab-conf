@@ -19,7 +19,7 @@ Les preuves brutes restent hors du dépôt.
 | ID | État après revue | Traitement |
 | --- | --- | --- |
 | F-01 | corrigé dans la configuration | La garde Docker ne dépend plus d'une interface physique nommée. |
-| F-02 | retest requis | Le collecteur enregistrera les profils noyau et l'ordre LSM ; l'état actuel n'établit pas encore leur nombre. |
+| F-02 | confirmé, différé | Le retest montre AppArmor dans l'ordre LSM mais une liste de profils vide. Aucun profil générique non adapté n'est chargé ; une phase dédiée créera et testera des profils par service. |
 | F-03 | risque accepté planifié | Aucun reboot uniquement pour aligner les générations ; validation au prochain redémarrage planifié. |
 | F-04 | différé, non déployé | Déploiement Caddy/Kuma à réaliser via Portainer avant de retirer 9443. |
 | F-05 | différé avec contrôle compensatoire | 9443 reste temporairement nécessaire ; le retrait suit la validation Caddy et de son autorité locale. |
@@ -43,3 +43,9 @@ cat /var/lib/homelab-security-snapshot/latest/apparmor-profiles.txt
 Le retest de F-04/F-05 ne commence qu'après le déploiement autorisé du stack
 Caddy/Kuma. Aucun test d'authentification, scan actif ou recréation de volume
 n'a été réalisé pour cette remédiation.
+
+Le retest F-02 a été effectué après l'activation de la génération contenant le
+collecteur amélioré : `lsm.txt` contient `apparmor`, tandis que
+`apparmor-profiles.txt` est vide. AppArmor est donc disponible mais ne confine
+encore aucun processus ; cette propriété n'est pas présentée comme un contrôle
+compensatoire dans l'attente de profils adaptés.
