@@ -32,7 +32,9 @@ améliorations sont bienvenues.
 Les explications un peu plus détaillées sont dans [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 et les commandes du quotidien dans [docs/OPERATIONS.md](docs/OPERATIONS.md). La
 configuration et les précautions propres à l'agent sont décrites dans
-[docs/CODEX.md](docs/CODEX.md).
+[docs/CODEX.md](docs/CODEX.md). Le périmètre de sécurité est défini dans
+[SECURITY.md](SECURITY.md) et les scénarios à auditer dans
+[docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
 ## Appliquer une modification
 
@@ -68,6 +70,7 @@ de Git.
 - [x] Chiffrement du système, Secure Boot et TPM2 ;
 - [x] Socle réseau et SSH durci ;
 - [x] Audit local et maintenance régulière du store Nix ;
+- [x] Politique de sécurité et modèle de menaces documentés ;
 - [ ] Sauvegardes automatisées vers une destination à choisir ;
 - [ ] Conteneurs ou virtualisation, selon les services retenus ;
 - [ ] Supervision locale et alertes ;
