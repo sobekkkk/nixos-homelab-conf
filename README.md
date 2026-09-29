@@ -11,6 +11,7 @@ améliorations sont bienvenues.
 ## État actuel
 
 - NixOS 26.05, configuration gérée avec des flakes ;
+- Codex CLI installé de manière déclarative pour assister l'administration ;
 - disque système chiffré avec LUKS2 ;
 - déverrouillage TPM2 + PIN, lié au démarrage mesuré (PCR 0, 4 et 7) ;
 - Secure Boot avec Lanzaboote et `sbctl` ;
@@ -29,7 +30,9 @@ améliorations sont bienvenues.
 ```
 
 Les explications un peu plus détaillées sont dans [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-et les commandes du quotidien dans [docs/OPERATIONS.md](docs/OPERATIONS.md).
+et les commandes du quotidien dans [docs/OPERATIONS.md](docs/OPERATIONS.md). La
+configuration et les précautions propres à l'agent sont décrites dans
+[docs/CODEX.md](docs/CODEX.md).
 
 ## Appliquer une modification
 
