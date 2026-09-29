@@ -8,8 +8,8 @@ que les contrôles fonctionnent.
 
 Le dépôt configure une unique machine NixOS personnelle nommée `homelab`. Elle
 sert aujourd'hui de base d'administration et d'expérimentation. Docker et
-Portainer CE y forment une première plateforme de conteneurs, mais aucun service
-applicatif ou accès Internet n'est encore prévu.
+Portainer CE y forment une plateforme de conteneurs, avec une supervision locale
+derrière un proxy HTTPS. Aucun accès Internet n'est prévu.
 
 Le périmètre principal comprend :
 
@@ -18,18 +18,20 @@ Le périmètre principal comprend :
 - l'administration locale et SSH du compte `sobek` ;
 - le pare-feu, le durcissement noyau, AppArmor, les journaux et l'audit ;
 - Docker local, sa garde réseau et Portainer CE ;
+- le proxy Caddy, Uptime Kuma et leurs volumes locaux ;
 - les tâches de maintenance Nix et l'usage interactif de Codex CLI.
 
-La machine est administrée par une seule personne. SSH et l'interface HTTPS de
-Portainer sont les seuls services réseau attendus. Ils doivent rester joignables
-uniquement depuis le LAN IPv4 `192.168.1.0/24`. Tout nouveau service, port ou
-compte élargit le périmètre et doit être documenté avant son activation.
+La machine est administrée par une seule personne. SSH, Portainer et la
+supervision sont les seuls services réseau attendus. Ils doivent rester
+joignables uniquement depuis le LAN IPv4 `192.168.1.0/24`. Tout nouveau service,
+port ou compte élargit le périmètre et doit être documenté avant son activation.
 
 ## Modèle de menaces et frontières de confiance
 
 Les actifs principaux sont les données du volume chiffré, les droits `root`, la
 clé SSH d'administration, les secrets futurs des services, les clés Secure Boot
-et l'intégrité de la configuration Git/NixOS.
+et l'intégrité de la configuration Git/NixOS. L'historique de supervision et
+l'autorité locale Caddy sont également sensibles.
 
 Les entrées considérées comme potentiellement hostiles comprennent le trafic du
 LAN, les dépôts et dépendances mis à jour, les fichiers ou instructions traités
@@ -50,6 +52,8 @@ Les principales frontières sont :
    compte qui les lance.
 6. Portainer vers le socket Docker local : cette frontière donne à Portainer une
    capacité d'administration Docker équivalente à `root` sur l'hôte.
+7. Caddy vers Portainer et Uptime Kuma sur des réseaux Docker privés : Kuma ne
+   doit pas être directement publié sur l'hôte.
 
 Le modèle détaillé et ses scénarios sont dans
 [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
@@ -70,9 +74,12 @@ Une modification ne doit pas rompre les propriétés suivantes :
 - Docker ne doit pas écouter une API TCP, `sobek` ne doit pas rejoindre le
   groupe `docker`, et la garde `DOCKER-USER` doit s'activer avant tout
   conteneur qui publie un port ;
-- Portainer ne doit publier que TCP/9443 en HTTPS, vers le LAN ; les ports 8000,
-  9000, 80 et 443 restent absents tant qu'une décision documentée ne les ajoute
-  pas ;
+- Caddy peut publier TCP/443 vers le LAN pour `portainer.home.arpa` et
+  `status.home.arpa`; les ports 80, 8000, 9000 et 3001 restent absents ;
+- pendant la migration seulement, Portainer peut conserver TCP/9443 vers le LAN
+  afin de valider Caddy ; il doit être retiré une fois le proxy validé ;
+- Uptime Kuma doit rester sans port hôte ni socket Docker, sur son réseau privé,
+  avec les privilèges et capacités minimales prévus par le stack ;
 - le démarrage normal doit conserver Secure Boot et le déverrouillage LUKS2 par
   TPM2 + PIN, sans retirer les moyens de récupération hors machine ;
 - une configuration non évaluée ou non construite ne doit pas être activée ;
@@ -89,6 +96,8 @@ Un résultat est pertinent s'il montre un chemin réaliste permettant notamment 
 - un accès réseau non prévu ou un contournement de l'authentification SSH ;
 - un port Docker publiquement accessible, un contournement de `DOCKER-USER` ou
   un accès non autorisé à Portainer / au socket Docker ;
+- une publication directe de Kuma, une clé de l'autorité Caddy exposée ou une
+  interface de supervision sans HTTPS vers le LAN ;
 - une élévation de privilèges depuis une capacité réellement accessible ;
 - l'extraction d'un secret, le déchiffrement hors politique ou la modification
   persistante du démarrage ;
@@ -136,6 +145,12 @@ capacité, un secret ou une exposition susceptible de casser un invariant.
   sensibles, et cette capacité ne protège pas contre une compromission du LAN.
 - Les sauvegardes automatisées du volume `portainer_data` et des futurs volumes
   applicatifs ne sont pas encore définies.
+- Les volumes Uptime Kuma et Caddy ne sont pas encore sauvegardés. L'autorité
+  locale Caddy devra être importée uniquement sur les appareils de confiance.
+- Pendant la migration, Caddy ne vérifie pas le certificat auto-signé de
+  Portainer sur leur réseau Docker privé. Les navigateurs reçoivent toutefois
+  le certificat Caddy ; cette exception doit être supprimée ou justifiée de
+  nouveau après le retrait de TCP/9443.
 
 ## Signaler un problème
 

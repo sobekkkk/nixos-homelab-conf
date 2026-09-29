@@ -1,0 +1,48 @@
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    depends_on:
+      - uptime-kuma
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - homelab-proxy
+      - kuma
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.5
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - kuma
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+networks:
+  homelab-proxy:
+    external: true
+  kuma:
+    internal: true
+    name: uptime-kuma-net
+
+volumes:
+  caddy_data:
+    name: uptime-kuma-caddy-data
+  caddy_config:
+    name: uptime-kuma-caddy-config
+  uptime_kuma_data:
+    name: uptime-kuma-data

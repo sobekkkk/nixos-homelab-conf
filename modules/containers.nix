@@ -18,7 +18,10 @@
     containers.portainer = {
       image = "portainer/portainer-ce:2.39.0";
       pull = "missing";
+      # Migration temporaire : le port direct reste disponible le temps de
+      # déployer puis valider Caddy. Il sera retiré dans l'étape suivante.
       ports = [ "9443:9443" ];
+      networks = [ "homelab-proxy" ];
       volumes = [
         "/var/run/docker.sock:/var/run/docker.sock"
         "portainer_data:/data"
@@ -70,9 +73,29 @@
     '';
   };
 
-  # Portainer ne peut démarrer que lorsque la garde réseau a bien été posée.
+  # Ce réseau est l'unique lien entre le proxy TLS et les interfaces internes.
+  # Il est créé avant Portainer pour que celui-ci ne soit jamais publié sur
+  # l'interface hôte.
+  systemd.services.docker-homelab-proxy-network = {
+    description = "Create the shared Docker network for the HTTPS proxy";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "docker.service" "docker-lan-guard.service" ];
+    requires = [ "docker.service" "docker-lan-guard.service" ];
+    before = [ "docker-portainer.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    path = [ config.virtualisation.docker.package ];
+    script = ''
+      docker network inspect homelab-proxy >/dev/null 2>&1 || \
+        docker network create --driver bridge homelab-proxy
+    '';
+  };
+
+  # Portainer ne peut démarrer que lorsque la garde et le réseau proxy existent.
   systemd.services.docker-portainer = {
-    requires = [ "docker-lan-guard.service" ];
-    after = [ "docker-lan-guard.service" ];
+    requires = [ "docker-lan-guard.service" "docker-homelab-proxy-network.service" ];
+    after = [ "docker-lan-guard.service" "docker-homelab-proxy-network.service" ];
   };
 }

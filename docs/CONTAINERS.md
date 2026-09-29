@@ -59,3 +59,13 @@ modèle de menaces.
 
 Pour l'instant, les sauvegardes automatisées ne sont pas prêtes : aucun service
 contenant des données importantes ne doit donc être considéré comme protégé.
+
+## Exception de démarrage : supervision
+
+Le stack Uptime Kuma est conservé dans `stacks/uptime-kuma/` dans ce dépôt afin
+de servir d'exemple petit, lisible et sans secret. Il est déployé par Portainer
+et non par une commande Docker lancée sur l'hôte. Caddy devient l'unique entrée
+HTTPS locale, avec `portainer.home.arpa` et `status.home.arpa`. Son guide est
+dans [`SUPERVISION.md`](SUPERVISION.md). Les prochains stacks qui contiendront
+des secrets ou des données personnelles devront migrer vers leur propre dépôt
+privé.

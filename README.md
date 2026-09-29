@@ -22,6 +22,8 @@ améliorations sont bienvenues.
 - Docker local, avec Portainer CE comme interface unique des conteneurs ;
 - Portainer disponible uniquement en HTTPS sur le LAN, avec une garde dédiée
   contre le contournement du pare-feu par les ports Docker publiés.
+- HTTPS local unifié en préparation : Caddy servira Portainer et la supervision
+  sous les noms `*.home.arpa`, sans exposition Internet.
 
 ## Organisation
 
@@ -38,7 +40,8 @@ configuration et les précautions propres à l'agent sont décrites dans
 [docs/CODEX.md](docs/CODEX.md). Le périmètre de sécurité est défini dans
 [SECURITY.md](SECURITY.md) et les scénarios à auditer dans
 [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md). Les règles simples pour les
-conteneurs sont dans [docs/CONTAINERS.md](docs/CONTAINERS.md).
+conteneurs sont dans [docs/CONTAINERS.md](docs/CONTAINERS.md). La supervision
+locale est expliquée dans [docs/SUPERVISION.md](docs/SUPERVISION.md).
 
 ## Appliquer une modification
 
@@ -78,7 +81,7 @@ de Git.
 - [x] Base Docker et Portainer CE restreints au LAN ;
 - [ ] Sauvegardes automatisées vers une destination à choisir ;
 - [ ] Premier service applicatif, avec données et sauvegarde définies ;
-- [ ] Supervision locale et alertes ;
+- [ ] HTTPS local unifié et supervision Uptime Kuma à déployer ;
 - [ ] Revue de sécurité de l'infrastructure avec un périmètre explicite.
 
 ## Participer ou proposer une idée
