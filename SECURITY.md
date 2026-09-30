@@ -89,7 +89,9 @@ Une modification ne doit pas rompre les propriétés suivantes :
 - pendant la migration seulement, Portainer peut conserver TCP/9443 vers le LAN
   afin de valider Caddy ; il doit être retiré une fois le proxy validé ;
 - Uptime Kuma doit rester sans port hôte ni socket Docker, sur son réseau privé,
-  avec les privilèges et capacités minimales prévus par le stack ;
+  avec `no-new-privileges`; ses capacités Docker par défaut sont conservées pour
+  initialiser son volume de données et devront être réduites seulement après un
+  profil validé ;
 - le démarrage normal doit conserver Secure Boot et le déverrouillage LUKS2 par
   TPM2 + PIN, sans retirer les moyens de récupération hors machine ;
 - une configuration non évaluée ou non construite ne doit pas être activée ;

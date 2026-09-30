@@ -100,3 +100,12 @@ Caddy sert les noms `*.home.arpa` uniquement au LAN. Le stack Caddy est donc
 lié explicitement à `192.168.1.69:443`, plutôt qu'à toutes les interfaces.
 Cette séparation évite un conflit de port et garantit qu'Uptime Kuma et Caddy
 ne deviennent pas accessibles depuis le tailnet par effet de bord.
+
+## 2026-09-30 — Capacités nécessaires à Uptime Kuma
+
+Uptime Kuma ne démarrait pas avec `cap_drop: ALL` : l'image ne pouvait plus
+créer son répertoire `data/upload/` dans le volume persistant. Cette restriction
+est retirée pour Kuma, mais `no-new-privileges` et l'absence de port hôte ou de
+socket Docker restent appliqués. Caddy conserve, lui, ses capacités minimales.
+Une réduction supplémentaire devra être testée avec un profil de service réel,
+pas ajoutée au hasard.

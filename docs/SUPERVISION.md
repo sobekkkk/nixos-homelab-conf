@@ -60,8 +60,10 @@ port direct de Portainer : TCP/443 deviendra la seule interface web publiée.
 Créer le compte administrateur avec un mot de passe long, unique et conservé
 dans un gestionnaire de mots de passe. Commencer par des moniteurs TCP sans
 secret : SSH (`192.168.1.69:22`), Portainer (`portainer.home.arpa:443`) et le
-proxy HTTPS (`status.home.arpa:443`). Le stack retire les capacités Linux inutiles : ne
-pas utiliser de moniteur ICMP/ping dans cette première version.
+proxy HTTPS (`status.home.arpa:443`). Kuma conserve ses capacités Docker par
+défaut pour initialiser son volume ; le stack garde néanmoins
+`no-new-privileges` et ne lui publie aucun port. Ne pas utiliser de moniteur
+ICMP/ping dans cette première version.
 
 Notifications externes, webhooks et tokens seront ajoutés seulement lorsque
 leur destination et leur stockage hors Git auront été décidés.
