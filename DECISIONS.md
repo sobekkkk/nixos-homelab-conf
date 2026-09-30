@@ -52,10 +52,10 @@ frontière entre l'édition de la source et l'activation système.
 
 ### Ce qui reste volontairement différé
 
-- Caddy/Uptime Kuma ne sont pas encore déployés : enlever 9443 avant que le
-  proxy HTTPS soit vérifié couperait Portainer. La migration reste donc à faire
-  depuis Portainer, suivie de l'import de l'autorité Caddy sur les clients de
-  confiance, puis du retrait de 9443.
+- Le retrait de TCP/9443 attend la validation de Caddy depuis un appareil du
+  LAN et l'import de son autorité sur les clients de confiance. Le relais
+  Tailscale est déjà une voie d'administration distante sûre, mais ne remplace
+  pas ce test LAN ; conserver 9443 évite de perdre une voie de récupération.
 - Le contrôle Portainer a répondu `204` le 29 septembre 2026 : le premier
   administrateur existe déjà. Le risque F-08 ne touche donc pas l'instance
   actuelle. Une recréation future de `portainer_data` exigera une fenêtre de
@@ -109,3 +109,13 @@ est retirée pour Kuma, mais `no-new-privileges` et l'absence de port hôte ou d
 socket Docker restent appliqués. Caddy conserve, lui, ses capacités minimales.
 Une réduction supplémentaire devra être testée avec un profil de service réel,
 pas ajoutée au hasard.
+
+## 2026-09-30 — Premier déploiement de la supervision
+
+Le stack Caddy/Uptime Kuma est déployé et vérifié dans Portainer : Caddy est
+*running* sur `192.168.1.69:443`, Kuma est *healthy* et ne publie aucun port
+hôte. L'adresse Tailscale garde son propre TCP/443 pour Portainer Serve. Le
+déploiement a utilisé l'éditeur Web de Portainer à partir du commit `664f24a`;
+ce compromis est temporaire car le dépôt actuel est public. Les futurs stacks
+avec données ou secrets seront placés dans un dépôt privé et déployés en mode
+Git afin de supprimer le risque de dérive entre Portainer et la source revue.
