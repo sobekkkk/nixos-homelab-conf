@@ -138,3 +138,12 @@ stack n'a pas supprimé les volumes nommés : Kuma a repris son état et est
 *healthy*, tandis que Caddy est *running*. Le nom Portainer
 `uptime-kuma-gitops` évite une collision avec l'ancien enregistrement pendant
 la migration ; il n'affecte ni les volumes, ni l'exposition réseau.
+
+## 2026-09-30 — Kuma privé via Tailscale Serve
+
+Kuma reste isolé du LAN et d'Internet : le conteneur n'écoute que sur
+`127.0.0.1:3001`. Tailscale Serve termine HTTPS avec le certificat du tailnet
+et le relaie exclusivement sur TCP/8443 pour les appareils autorisés. Ce port
+séparé évite une réécriture d'URL fragile et laisse TCP/443 au relais Portainer.
+La règle nftables est limitée à `tailscale0`; aucun Funnel, port routeur ou
+accès Docker supplémentaire n'est ajouté.
