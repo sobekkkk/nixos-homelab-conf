@@ -1,77 +1,71 @@
-# Conteneurs sans bazar
+# Contrat de déploiement des applications
 
-Cette page pose les règles de départ pour héberger de petits services sans
-transformer le serveur en collection de commandes oubliées.
+## 1. Répartition
 
-## Qui fait quoi ?
+NixOS déclare moteur, garde réseau, réseau homelab-proxy et Portainer.
+Le dépôt privé homelab-apps déclare les autres stacks. Portainer lit Git,
+déploie et montre l'état ; son éditeur n'est pas la source de vérité.
 
-| Couche | Responsable | But |
-| --- | --- | --- |
-| Hôte | NixOS | Docker, pare-feu, mises à jour système, journaux et sécurité. |
-| Interface | Portainer CE | Voir les conteneurs et déployer les futurs stacks Docker. |
-| Applications | Stacks Portainer | Un service précis, ses données, ses variables et sa documentation. |
-| Observabilité | Uptime Kuma + Netdata | Disponibilité des services et métriques temps réel privées. |
+Un service par dossier, image officielle épinglée par tag et digest, volume
+nommé stable. Pas de commande docker run oubliée, de stack concurrente ou de
+tag latest. Un digest garantit l'identité du contenu, pas sa sécurité.
 
-Portainer est lui-même déclaré dans NixOS pour éviter le paradoxe d'un outil
-qui devrait se déployer lui-même. Il est le seul conteneur de départ. Tous les
-autres services passeront par une stack Portainer, idéalement suivie dans un
-dépôt Git privé séparé de la configuration NixOS. Le modèle de déploiement est
-décrit dans [`GITOPS.md`](GITOPS.md) : Portainer lira les stacks depuis Git et
-les appliquera automatiquement par polling, sans rendre le serveur public.
+## 2. Fiche obligatoire d'un nouveau service
 
-## Accès initial
+| Rubrique | Questions |
+| --- | --- |
+| Objectif / propriétaire | Quel besoin, qui maintient, quand le retirer ? |
+| Dépendances | DNS, proxy, service externe, base de données ? |
+| Exposition | Clients autorisés, ports, TLS, authentification ? |
+| Données | Volumes, format, migrations, caractère remplaçable ? |
+| Secrets | Source, point d'injection, permissions, rotation ? |
+| Privilèges | Utilisateur, capacités, montages hôte, namespaces ? |
+| Ressources | CPU/RAM mesurés, budget disque, logs bornés ? |
+| Déploiement | Compose, branche, polling, checks, rollback ? |
+| Exploitation | Santé, sonde, alertes, diagnostic, retrait ? |
+| Récupération | Ce qui doit être reprovisionné ; limites de restauration ? |
 
-Depuis le LAN, ouvrir :
+Ne pas inventer des limites CPU/RAM sans essai : proposer un budget et vérifier
+le comportement sous charge représentative autorisée. Les stacks actuelles
+n'ont pas toutes des limites mémoire/CPU explicites.
 
-```text
-https://192.168.1.69:9443
-```
+## 3. Baseline attendue
 
-Portainer crée d'abord un certificat auto-signé. L'avertissement du navigateur
-est normal tant qu'il concerne exactement cette adresse locale. Créer ensuite
-le premier administrateur avec un mot de passe long, unique et conservé dans un
-gestionnaire de mots de passe. Le port 9443 est le seul port Portainer publié.
+- Pas de port hôte par défaut : proxy existant si nécessaire et accès privé.
+- Pas de privileged, réseau host, PID host ou montage racine pour un service
+  ordinaire. Chaque exception exige justification et test.
+- Pas de socket Docker pour les applications ; Portainer est l'exception
+  d'administration explicite. Ne pas fournir un proxy Docker global GET-only.
+- no-new-privileges et réduction de capacités quand compatibles ; utilisateur
+  non root et rootfs readonly à tester, pas à cocher sans validation.
+- Logs bornés, restart documenté, contrôle de santé fonctionnel.
+- Aucun secret dans configs.content, .env committé ou variables affichées.
+- Vérifier DNS et sorties nécessaires. Réseau internal + second NAT n'est pas
+  une isolation Internet ; bridge partagé n'est pas une ACL par application.
+- Ne pas retirer la garde Docker pour dépanner.
 
-Portainer reçoit le socket Docker en écriture pour pouvoir administrer Docker :
-une compromission de son compte administrateur ou de Portainer a donc un impact
-proche de `root` sur cet hôte. Cela explique le choix LAN uniquement, HTTPS, pas
-de compte `docker` pour `sobek`, et pas d'exposition Internet directe.
+Netdata est une exception d'observation hôte, non un modèle à copier.
+Ses accès sensibles sont dans [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Règle réseau importante
+## 4. Ajout d'une application
 
-Les ports publiés par Docker peuvent contourner les règles pare-feu normales.
-`docker-lan-guard` s'exécute avant Portainer et restreint la chaîne Docker
-`DOCKER-USER` au LAN IPv4, quelle que soit l'interface physique par laquelle
-le trafic arrive. Il bloque aussi les arrivées IPv6 externes vers les ports
-Docker publiés. Les bridges Docker et la boucle locale sont les seules
-exceptions, nécessaires aux communications internes entre conteneurs.
+1. Créer apps/<service>/compose.yaml et README dans le dépôt privé.
+2. Documenter la fiche ci-dessus et les éventuels écarts.
+3. Vérifier modèle Compose, images, secrets absents et liens de documentation.
+4. Faire autoriser publication/activation si le polling main applique le patch.
+5. Créer le stack Git avec le bon chemin, accès de lecture minimal et polling.
+6. Contrôler nom réel, images, volumes, ports, point HTTP et permissions.
+7. Ajouter les sondes/alertes utiles ; consigner l'état réellement observé.
 
-Ce n'est pas une autorisation d'exposer librement des services : un nouveau port
-reste une décision documentée. Les ports 80/443, un nom de domaine, un proxy
-inverse et un accès depuis Internet sont un futur chantier, avec son propre
-modèle de menaces.
+Les sauvegardes sont différées au propriétaire. Ne pas qualifier des données
+importantes de protégées tant que leur récupération n'est pas attestée.
 
-## Avant de déployer une application
+## 5. Retrait
 
-1. Créer ou mettre à jour son compose/stack dans le dépôt privé des services.
-2. Noter ses volumes, ses secrets hors Git, ses ports et la façon de restaurer
-   ses données.
-3. Déployer la stack dans Portainer depuis ce dépôt, jamais en copiant un
-   secret dans ce dépôt NixOS ou dans une commande d'historique shell.
-4. Vérifier les journaux et l'accès uniquement depuis le LAN.
-5. Mettre en place puis tester la sauvegarde avant d'y placer des données
-   importantes.
+Décrire les clients et dépendances avant arrêt. Retirer les routes/sondes devenues
+inutiles dans un changement autorisé ; conserver les données selon la décision
+du propriétaire. Suppression de volumes ou révocation de secrets : action séparée,
+cible explicite, perte comprise. Un retrait de stack n'est pas une autorisation
+de purger tous les volumes.
 
-Pour l'instant, les sauvegardes automatisées ne sont pas prêtes : aucun service
-contenant des données importantes ne doit donc être considéré comme protégé.
-
-## Exception de démarrage : supervision
-
-Uptime Kuma et Netdata sont suivis dans le dépôt GitOps privé `homelab-apps`.
-Ils sont déployés par Portainer et non par une commande Docker lancée sur
-l'hôte. Caddy devient l'unique entrée HTTPS locale, avec
-`portainer.home.arpa`, `status.home.arpa` et `netdata.home.arpa`. Netdata reçoit
-les pseudo-systèmes de l'hôte en lecture seule pour produire ses métriques, mais
-ne reçoit jamais le socket Docker. Son guide est dans
-[`SUPERVISION.md`](SUPERVISION.md). Les prochains stacks qui contiendront des
-secrets ou des données personnelles devront aussi vivre dans le dépôt privé.
+Guides : [GitOps](GITOPS.md), [données](DATA.md), [runbooks](RUNBOOKS.md).

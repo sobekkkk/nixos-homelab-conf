@@ -1,106 +1,114 @@
-# Supervision locale
+# Observabilité et alerting
 
-La supervision associe deux outils complémentaires, tous deux gérés comme des
-stacks Portainer, pas comme des paquets installés sur l'hôte : Uptime Kuma pour
-la disponibilité et Netdata pour les métriques détaillées.
+## 1. Modèle
 
-- **Uptime Kuma** vérifie qu'une interface est joignable et répond correctement ;
-- **Netdata** montre en temps réel CPU, mémoire, disque, réseau, processus,
-  unités systemd et consommation des cgroups Docker.
+| Outil | Question | Source | Limite |
+| --- | --- | --- | --- |
+| Kuma | L'endpoint répond-il ? | Sondes HTTP internes configurées dans l'UI | Pas une sonde tailnet externe |
+| Netdata | Pourquoi le système se dégrade-t-il ? | Hôte, processus, systemd, cgroups | Collecte locale, noms Docker par hash |
+| Portainer | Quel conteneur/stack est déployé ? | Docker Engine | Interface privilégiée, pas un système métrique |
+| journald/auditd | Que s'est-il passé ? | Événements locaux | Rétention bornée, pas d'export établi |
+| Discord | Une action est-elle signalée ? | Notifications sortantes | Réception dépend du réseau/fournisseur |
 
-## Composition et exposition
-
-Le stack `stacks/uptime-kuma/compose.yaml` contient :
-
-- **Uptime Kuma 2.5.5**, avec ses réglages dans le volume local
-  `uptime-kuma-data` ;
-- **Caddy 2.11.4**, qui termine HTTPS avec une autorité locale, rejoint Kuma
-  par le réseau Docker privé `uptime-kuma-net` et Portainer par
-  `homelab-proxy`.
-
-Kuma et Netdata n'ont aucun port hôte. Caddy publie TCP/443 sur `192.168.1.69`,
-et un listener dédié TCP/8444 sur cette même adresse, tous deux limités au LAN
-par la garde Docker. Tailscale Serve rejoint Caddy et relaie Kuma vers le port
-HTTPS 8443, Netdata vers TCP/8444, uniquement aux appareils autorisés du
-tailnet ; le port 443 Tailscale reste réservé à Portainer. Les ports 80,
-UDP/443, 3001, 8000, 9000 et 19999 ne sont pas publiés.
-
-Pour cette migration, Caddy joint Portainer en HTTPS sur le réseau Docker privé
-`homelab-proxy`, mais ne vérifie pas son certificat auto-signé en amont. Cette
-exception ne concerne jamais les navigateurs : elle disparaîtra quand Portainer
-recevra un certificat interne ou que son port direct aura été retiré et validé.
-
-Les volumes `uptime-kuma-data`, `uptime-kuma-caddy-data` et
-`uptime-kuma-caddy-config` ne sont pas encore sauvegardés. Les données de
-supervision ne sont donc pas récupérables en cas de perte du disque.
-
-## Déploiement dans Portainer
-
-La configuration est un exemple sans secret suivi dans ce dépôt. Les prochains
-stacks contenant des secrets ou données personnelles devront aller dans un dépôt
-privé séparé.
-
-Le premier déploiement a été fait le 30 septembre 2026 depuis l'éditeur Web de
-Portainer, en copiant exactement le compose du commit `664f24a`. Cela a permis
-de vérifier proprement l'initialisation du volume Kuma sans donner de droits
-Docker à l'utilisateur de l'hôte. Les conteneurs `caddy` et `uptime-kuma` sont
-respectivement *running* et *healthy*.
-
-Le stack est maintenant lu par Portainer depuis le dépôt privé `homelab-apps`,
-chemin `apps/uptime-kuma/compose.yaml`, sous le nom `uptime-kuma-gitops`.
-Portainer vérifie le dépôt toutes les 15 minutes. Toute modification doit donc
-être commitée dans ce dépôt privé ; ne jamais modifier le stack uniquement dans
-son éditeur. Le Caddyfile est intégré au compose comme configuration Docker,
-donc aucun montage relatif ni fichier séparé n'est nécessaire.
-
-L'interface sera disponible à :
-
-```text
-https://portainer.home.arpa
-https://status.home.arpa
-https://homelab.tail239aaa.ts.net:8443
-https://netdata.home.arpa
-https://homelab.tail239aaa.ts.net:8444
+```mermaid
+flowchart LR
+    CPU[CPU / RAM / PSI / disque] --> N[Netdata]
+    Units[systemd / cgroups] --> N
+    HTTP[Endpoints internes Caddy] --> K[Kuma]
+    N --> Rules[Règles ciblées · délais et hystérésis]
+    Rules --> D[Discord]
+    K --> D
+    Host[Services hôte] --> Logs[journald / auditd]
+    Logs --> Op[Diagnostic opérateur]
+    D --> Op
 ```
 
-Les noms `*.home.arpa` doivent d'abord résoudre vers `192.168.1.69` sur le
-PC d'administration. Leur certificat est émis par l'autorité locale Caddy.
-Les URL Tailscale de Kuma et Netdata sont disponibles hors du LAN depuis les appareils autorisés
-du tailnet et utilisent le certificat public Tailscale. Vérifier l'adresse locale
-exacte avant toute exception navigateur ; l'import de l'autorité Caddy sur les
-postes de confiance est le prochain raffinement.
+La philosophie vise des signaux utiles et actionnables plutôt que « tout rouge
+ou tout vert ». Latence, erreurs et disponibilité concernent Kuma ; saturation
+et ressources concernent Netdata. Le trafic par application n'est pas entièrement
+instrumenté. Pas de SLO/uptime contractuel ni d'astreinte 24/7 promis.
 
-La première étape garde temporairement `https://192.168.1.69:9443` disponible
-afin de pouvoir déployer puis tester le proxy. Une fois les deux noms, le
-certificat et les interfaces validés, une seconde modification supprimera ce
-port direct de Portainer : TCP/443 deviendra la seule interface web publiée.
+## 2. Accès et sondes
 
-## Première configuration Kuma
+URLs : [NETWORK.md](NETWORK.md). Kuma et Netdata n'ont pas de port hôte direct.
+Caddy appartient au stack uptime-kuma-gitops ; Netdata est une autre stack.
+Les sondes utilisent https://caddy/health/kuma, /health/portainer, /health/netdata.
+Elles utilisent les backends prévus sans Host personnalisé ; l'exception TLS
+interne ne s'étend pas aux navigateurs. Voir [RUNBOOKS.md](RUNBOOKS.md).
 
-Créer le compte administrateur avec un mot de passe long, unique et conservé
-dans un gestionnaire de mots de passe. Commencer par des moniteurs TCP sans
-secret : SSH (`192.168.1.69:22`), Portainer (`portainer.home.arpa:443`) et le
-proxy HTTPS (`status.home.arpa:443`). Kuma conserve ses capacités Docker par
-défaut pour initialiser son volume ; le stack garde néanmoins
-`no-new-privileges` et ne lui publie aucun port. Ne pas utiliser de moniteur
-ICMP/ping dans cette première version.
+## 3. Netdata déclaré
 
-Notifications externes, webhooks et tokens seront ajoutés seulement lorsque
-leur destination et leur stockage hors Git auront été décidés.
+Collecte de base 1 seconde ; dbengine trois tiers :
+14 jours / 1 GiB, 3 mois / 1 GiB, 1 an / 1 GiB. Durées objectifs et limites
+souples : vérifier la rétention effective. Logs Netdata json-file : 3 × 10 Mo.
+DISABLE_TELEMETRY et DO_NOT_TRACK déclarés ; ce n'est pas une désactivation
+d'une identité Cloud déjà enregistrée.
 
-## Netdata et la frontière Docker
+Pas de socket Docker. Cgroups visibles par identifiant, pas inventaire complet,
+noms ou compteurs de redémarrage garantis. Montages hôte et capacités Netdata
+restent sensibles : [DATA.md](DATA.md), [STATUS.md](STATUS.md).
 
-Netdata est suivi dans le dépôt privé `homelab-apps`, chemin
-`apps/netdata/compose.yaml`. Il se joint seulement au réseau Docker partagé
-avec Caddy, qui est son unique proxy. Pour protéger les données des applications,
-Netdata ne reçoit jamais le socket Docker : un proxy « lecture seule » générique
-pourrait encore rendre accessibles des journaux ou fichiers de conteneurs via
-des endpoints GET. Les cgroups suffisent à suivre leur CPU, mémoire et I/O ;
-Portainer reste l'inventaire exact des conteneurs.
+## 4. Jeu d'alertes versionné
 
-## Mise à jour et retrait
+Source détaillée : dépôt privé apps/netdata/ALERTING.md et health.d/homelab.conf.
+17 règles homelab + deux règles natives sélectionnées. La configuration ferme
+la liste aux homelab_*, oom_kill, 1hour_memory_hw_corrupted ; les autres règles
+natives ne sont pas garanties chargées. Une intégration exige une revue.
 
-Modifier les versions d'image, relire le diff et redéployer le stack dans
-Portainer. Ne jamais utiliser `latest` ou une commande Docker non documentée.
-Pour retirer Kuma, arrêter le stack, exporter si nécessaire puis supprimer les
-trois volumes uniquement si la perte de l'historique est voulue.
+| Signal | Warning | Critical | Fenêtre / délai notification |
+| --- | --- | --- | --- |
+| CPU | >90 % | >98 % | Moyenne 10 min ; délai 2 min |
+| RAM disponible | <10 % | <5 % | MemAvailable ; délai 5 min |
+| Racine | >85 % utilisé ou <15 GiB | >95 % ou <5 GiB | Délai 2 min |
+| EFI | <200 MiB | <100 MiB | Délai 2 min |
+| Inodes racine | <15 % libres | <5 % | Délai 2 min |
+| PSI full mémoire | >5 % | >20 % | Moyenne noyau 5 min ; délai 2 min |
+| PSI full I/O | >20 % | >50 % | Même fenêtre/délai |
+| Dix unités essentielles | — | Aucun point active sur 2 min | Puis délai 30 s |
+| OOM / corruption mémoire | Règles natives de l'image épinglée | Règles natives | Pas de test destructif |
+
+Unités : docker, tailscaled, sshd, auditd, nftables, docker-lan-guard,
+docker-portainer, tailscale-portainer-serve, tailscale-uptime-kuma-serve,
+tailscale-netdata-serve. Certaines sont oneshot avec RemainAfterExit :
+elles restent observables, mais leur état ne prouve pas le backend HTTP.
+
+Hystérésis déclarée : CPU retour 85/95 %, RAM 15/8 %, racine 80/92 % et
+20/8 GiB, EFI 250/150 MiB, inodes 20/8 %, PSI mémoire 3/15 %, PSI IO 10/30 %.
+Retour notifié après 5 min pour ressources, 2 min pour services.
+Pas de rappel warning ; rappel critical toutes les 4 h pour homelab_*.
+delay retarde la notification, pas l'état affiché. Données absentes ≠ arrêt.
+
+## 5. Validation et réception
+
+La réception Discord WARNING/CRITICAL/CLEAR a été montrée par l'opérateur.
+Cela valide la chaîne de notification testée, pas les 17 expressions et seuils.
+Le correctif 768f95f embarque les règles dans configs.content après l'échec du
+bind configs.file. Aucun retest runtime réussi du nouveau jeu n'est attesté
+par cette revue documentaire.
+
+Depuis le clone applicatif, PowerShell :
+
+```powershell
+./apps/netdata/Test-AlertCoverage.ps1 -Offline
+./apps/netdata/Test-AlertCoverage.ps1 -RequireDeployed
+```
+
+Le premier compare copie inline et fichier canonique ; le second vérifie via
+l'API privée les graphiques, règles attendues et états évalués. Ne pas prendre
+un test offline pour une activation. Un test Discord réel requiert l'autorisation
+appropriée ; aucun incident artificiel n'est nécessaire.
+
+## 6. Lacunes et entretien
+
+Pas de garantie actuelle pour SMART/NVMe, température, expiration TLS,
+collecteurs absents, restart Docker individuel ou panne totale d'hôte.
+Kuma et Netdata partagent l'hôte et dépendent du même réseau sortant :
+une panne totale peut rester silencieuse. Sonde indépendante à décider,
+pas installée par ce dossier.
+
+Après changement de collecteur : vérifier points récents, dimensions et règles.
+Après modification de seuils : documenter bruit observé, impact utilisateur et
+fenêtre ; revoir après une période d'exploitation réelle.
+L'absence d'alerte n'est jamais une preuve de bonne collecte.
+
+Référence de méthode : [Google SRE · monitoring](https://sre.google/sre-book/monitoring-distributed-systems/).

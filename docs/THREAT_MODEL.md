@@ -1,8 +1,10 @@
 # Modèle de menaces
 
-Ce document décrit l'état actuel du homelab et sert de point de départ à une
-future revue de sécurité. Les scénarios ci-dessous sont des hypothèses à tester,
-pas des vulnérabilités confirmées.
+Ce document décrit des scénarios de menace, pas des vulnérabilités confirmées.
+Les revues historiques sont dans `security/reports/` ; leur couverture ne vaut
+pas validation de toutes les hypothèses. La topologie actuelle détaillée est
+dans [NETWORK.md](NETWORK.md), les limites et retests dans [STATUS.md](STATUS.md).
+Les tableaux de scénarios ne remplacent pas ce registre daté.
 
 ## 1. Vue d'ensemble
 
@@ -29,8 +31,8 @@ flowchart LR
     TAILNET -->|HTTPS 8443| TS_KUMA[Tailscale Serve / Kuma]
     TAILNET -->|HTTPS 8444| TS_NETDATA[Tailscale Serve / Netdata]
     TS_PORTAINER --> PORTAINER
-    TS_KUMA --> KUMA
-    TS_NETDATA --> NETDATA
+    TS_KUMA -->|backend HTTPS status.home.arpa| CADDY
+    TS_NETDATA -->|backend HTTPS netdata.home.arpa:8444| CADDY
     SSH --> USER[compte sobek]
     USER -->|mot de passe sudo| ROOT[root]
     GIT[Dépôt Git / flake] -->|eval + build| REBUILD[nixos-rebuild]
@@ -133,7 +135,7 @@ modèle et doit être décrite comme prérequis lorsqu'elle est supposée.
 | Haute | Un attaquant atteint Portainer ou son compte administrateur et utilise le socket Docker pour contrôler l'hôte | accès LAN/Internet imprévu et compte, vulnérabilité ou session Portainer | contrôle des conteneurs, capacité root indirecte | HTTPS 9443 seulement, LAN guard, aucun groupe Docker pour `sobek`, pas d'API TCP Docker | vérifier la garde `DOCKER-USER`, mot de passe Portainer unique et absence de redirection routeur (`modules/containers.nix`, `docs/CONTAINERS.md`) |
 | Haute | Un port publié par un futur conteneur contourne le pare-feu et devient accessible hors LAN | conteneur publiant un port et règle Docker absente ou contournée | exposition d'un service ou de ses données | chaîne `HOMELAB-DOCKER-GUARD` dans `DOCKER-USER`, démarrage Portainer dépendant de cette garde | contrôler `iptables -S DOCKER-USER` après chaque changement et avant tout accès distant (`modules/containers.nix`) |
 | Haute | Un attaquant atteint Kuma hors du tailnet, intercepte une première connexion TLS ou récupère l'autorité Caddy | Kuma publié, appareil LAN hostile ou volume Caddy exposé | contrôle du compte Kuma, lecture de supervision ou usurpation TLS locale | Kuma non publié, Tailscale Serve TCP/8443 privé via Caddy, Caddy TCP/443 LAN uniquement, volumes locaux | vérifier les ports et l'ACL Tailscale, importer l'autorité seulement sur les clients LAN de confiance et sauvegarder les volumes (`stacks/uptime-kuma/`, `docs/SUPERVISION.md`) |
-| Moyenne | Une compromission Netdata lit ou modifie des données d'applications via Docker | socket Docker présent, directement ou au travers d'un proxy trop large | lecture de secrets ou contrôle indirect de l'hôte | aucun socket Docker ni proxy API pour Netdata ; métriques Docker par cgroups en lecture seule | conserver l'absence de socket dans le stack, vérifier les montages et les réseaux après chaque évolution (`homelab-apps/apps/netdata/`, `docs/SUPERVISION.md`) |
+| Haute potentielle | Une compromission Netdata exploite les accès d'observation hôte | exécution compromise dans l'agent et accès aux fichiers/processus exposés | lecture de fichiers sensibles ou interaction avec processus selon permissions effectives | aucun socket Docker, mais PID hôte, SYS_PTRACE, racine et D-Bus restent sensibles ; ro ne suffit pas | réduire et tester les montages/capacités ; valider un chemin d'attaque avant de confirmer un finding (`homelab-apps/apps/netdata/`, `docs/STATUS.md`) |
 | Basse | Les espaces de noms utilisateur exposent une vulnérabilité noyau locale | exécution locale non privilégiée et faille noyau compatible | élévation locale | AppArmor, sysctl, mises à jour manuelles | conserver l'activation justifiée et réévaluer avec les futurs conteneurs (`modules/hardening.nix:4-12`) |
 | Basse | Le GC supprime une génération attendue pour un ancien retour arrière | génération non référencée âgée de plus de 30 jours | récupération plus longue, sans gain attaquant direct | quatre entrées de boot et racines Nix actives | sauvegarder la configuration et documenter les versions importantes (`modules/boot.nix:14-18`, `modules/maintenance.nix:8-15`) |
 
