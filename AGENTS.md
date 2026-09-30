@@ -43,3 +43,18 @@ Pour chaque exécution, conserver la date, la machine d'origine, la commande,
 la version de l'outil, la cible, l'artefact et l'identifiant de finding. Chaque
 finding confirmé indique l'asset, les préconditions, l'impact, la sévérité, la
 confiance, la cause racine, la preuve, la reproduction et le retest.
+
+## Mode unattended baseline
+
+Lorsqu'une tâche demande explicitement un "unattended baseline":
+
+- ne jamais attendre une intervention humaine ;
+- exécuter intégralement toutes les actions autorisées par `security/ROE.md`;
+- lorsqu'une action nécessiterait une approbation humaine, NE PAS l'exécuter ;
+- enregistrer cette action comme `deferred_requires_approval`;
+- expliquer pourquoi elle serait utile ;
+- continuer immédiatement avec les autres vérifications autorisées ;
+- ne jamais remédier automatiquement à une vulnérabilité ;
+- ne jamais modifier la configuration NixOS, Docker, nftables, les comptes,
+  les services ou les données ;
+- terminer le rapport même lorsque certaines vérifications sont impossibles.
