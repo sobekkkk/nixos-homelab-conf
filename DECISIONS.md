@@ -92,3 +92,11 @@ locale, entre `tailscaled` et Portainer. Le navigateur reçoit le certificat
 public du nom Tailscale. Le compte Portainer reste une capacité d'administration
 Docker équivalente à `root` : seuls les appareils personnels et de confiance
 doivent être autorisés par la politique Tailscale.
+
+## 2026-09-30 — Séparation du port HTTPS LAN et Tailscale
+
+Tailscale Serve utilise TCP/443 sur l'adresse Tailscale du serveur, tandis que
+Caddy sert les noms `*.home.arpa` uniquement au LAN. Le stack Caddy est donc
+lié explicitement à `192.168.1.69:443`, plutôt qu'à toutes les interfaces.
+Cette séparation évite un conflit de port et garantit qu'Uptime Kuma et Caddy
+ne deviennent pas accessibles depuis le tailnet par effet de bord.

@@ -13,8 +13,10 @@ Le stack `stacks/uptime-kuma/compose.yaml` contient :
   par le réseau Docker privé `uptime-kuma-net` et Portainer par
   `homelab-proxy`.
 
-Kuma n'a aucun port hôte. Seul Caddy publie TCP/443 et la garde Docker le limite
-au LAN. Les ports 80, UDP/443, 3001, 8000 et 9000 ne sont pas publiés.
+Kuma n'a aucun port hôte. Caddy publie TCP/443 uniquement sur
+`192.168.1.69`, et la garde Docker le limite au LAN. L'adresse Tailscale conserve
+son port 443 pour le relais privé de Portainer. Les ports 80, UDP/443, 3001,
+8000 et 9000 ne sont pas publiés.
 
 Pour cette migration, Caddy joint Portainer en HTTPS sur le réseau Docker privé
 `homelab-proxy`, mais ne vérifie pas son certificat auto-signé en amont. Cette

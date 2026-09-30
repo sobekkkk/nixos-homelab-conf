@@ -83,8 +83,9 @@ Une modification ne doit pas rompre les propriétés suivantes :
 - Docker ne doit pas écouter une API TCP, `sobek` ne doit pas rejoindre le
   groupe `docker`, et la garde `DOCKER-USER` doit s'activer avant tout
   conteneur qui publie un port ;
-- Caddy peut publier TCP/443 vers le LAN pour `portainer.home.arpa` et
-  `status.home.arpa`; les ports 80, 8000, 9000 et 3001 restent absents ;
+- Caddy peut publier TCP/443 exclusivement sur `192.168.1.69` pour
+  `portainer.home.arpa` et `status.home.arpa`; le port 443 du tailnet reste
+  réservé à Tailscale Serve et les ports 80, 8000, 9000 et 3001 restent absents ;
 - pendant la migration seulement, Portainer peut conserver TCP/9443 vers le LAN
   afin de valider Caddy ; il doit être retiré une fois le proxy validé ;
 - Uptime Kuma doit rester sans port hôte ni socket Docker, sur son réseau privé,

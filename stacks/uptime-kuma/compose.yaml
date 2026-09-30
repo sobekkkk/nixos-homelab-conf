@@ -6,7 +6,8 @@ services:
     depends_on:
       - uptime-kuma
     ports:
-      - "443:443"
+      # 443 sur l'adresse Tailscale est réservé à Tailscale Serve (Portainer).
+      - "192.168.1.69:443:443"
     volumes:
       - caddy_data:/data
       - caddy_config:/config

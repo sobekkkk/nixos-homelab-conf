@@ -66,12 +66,14 @@ dans un dépôt privé distinct. Elles ne doivent pas être lancées à la main 
 l'hôte ou ajouter un port public sans une décision et une revue explicites.
 
 Le premier stack de supervision est stocké dans `stacks/uptime-kuma/`. Caddy
-expose TCP/443, restreint au LAN, et garde Uptime Kuma sur un réseau Docker
-privé. Il rejoint aussi Portainer via le réseau `homelab-proxy`. Le proxy émet
-les certificats de `portainer.home.arpa` et `status.home.arpa` via son autorité
-locale ; le poste d'administration doit lui faire confiance avant que l'accès
-HTTPS soit considéré comme entièrement vérifié. Pendant cette migration, 9443
-reste disponible pour valider le proxy puis sera retiré.
+expose TCP/443 sur l'adresse LAN `192.168.1.69` seulement, et garde Uptime Kuma
+sur un réseau Docker privé. Le port 443 de l'adresse Tailscale reste ainsi
+réservé au relais HTTPS privé de Portainer. Caddy rejoint aussi Portainer via le
+réseau `homelab-proxy`. Le proxy émet les certificats de
+`portainer.home.arpa` et `status.home.arpa` via son autorité locale ; le poste
+d'administration doit lui faire confiance avant que l'accès HTTPS soit considéré
+comme entièrement vérifié. Pendant cette migration, 9443 reste disponible pour
+valider le proxy puis sera retiré.
 
 ## Modules NixOS
 
