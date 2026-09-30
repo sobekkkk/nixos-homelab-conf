@@ -1,187 +1,128 @@
-# Exploitation quotidienne
+# Manuel d'exploitation
 
-## Vérifications rapides
+## 1. Responsabilités et autorisations
 
-```bash
-sudo sbctl status
-systemctl --failed
-sudo cryptsetup status cryptroot
+sobek opère seul la plateforme. Les assistants préparent et inspectent avec
+les droits ordinaires ; Codex n'est jamais lancé avec sudo.
+Les actions privilégiées, rebuilds, redémarrages et modifications Docker/réseau
+restent soumis aux règles [AGENTS.md](../AGENTS.md) et [ROE](../security/ROE.md).
+Les commandes privilégiées ci-dessous sont des procédures pour l'opérateur,
+pas une délégation implicite.
+
+Avant toute maintenance réseau/boot : garder la session SSH, préparer une
+seconde connexion et prévoir l'accès LAN/physique. Pas de reboot distant sans
+possibilité de saisir le PIN TPM au démarrage.
+
+## 2. Baseline quotidienne / après changement
+
+Contrôles de lecture ordinaires :
+
+```sh
+hostname
+date --iso-8601=seconds
+systemctl --failed --no-pager
+systemctl is-active docker tailscaled sshd docker-lan-guard docker-portainer
+tailscale serve status
+readlink -f /run/current-system
+readlink -f /nix/var/nix/profiles/system
+git -C /etc/nixos rev-parse HEAD
+git -C /etc/nixos status --short
 ```
 
-## Snapshot de sécurité pour l'audit
+Résultat attendu : aucune unité échouée inexpliquée, points Serve attendus,
+révision identifiée. Les unités Serve oneshot peuvent être active (exited) :
+cela n'atteste pas un backend HTTP vivant.
 
-Après avoir construit et activé une version contenant
-`modules/security-snapshot.nix`, déclencher un snapshot à la demande avec :
+Contrôler séparément l'accès LAN/Tailscale, les sondes Kuma et la fraîcheur des
+graphiques Netdata. Éviter les captures affichant des identifiants.
 
-```bash
-sudo systemctl start homelab-security-snapshot.service
-ls -l /var/lib/homelab-security-snapshot/latest
-```
+## 3. Maintenance NixOS
 
-Le groupe `homelab-audit` permet à `sobek` de lire uniquement ce snapshot
-curaté. Il ne donne ni `sudo` ni accès au socket Docker. Les snapshots sont
-root-owned, expirent après 14 jours et excluent volontairement les variables
-d'environnement des conteneurs afin de ne pas exposer de secrets.
+Processus : [GITOPS.md](GITOPS.md). Pas d'auto-upgrade système.
+Revue des avis au moins toutes les deux semaines ; correctifs des composants
+exposés au LAN évalués sous sept jours ; revue mensuelle des autres changements.
+Ce sont des objectifs opérateur, pas un SLA fournisseur démontré.
 
-Pour consulter les journaux du démarrage courant :
+Une mise à jour de flake est un changement fonctionnel à relire :
 
-```bash
-sudo journalctl -b --no-pager
-```
-
-Pour filtrer l'audit des changements de configuration, après activation du
-module d'audit :
-
-```bash
-sudo ausearch -k nixos-configuration -i
-sudo ausearch -k ssh-configuration -i
-sudo ausearch -k secure-boot-keys -i
-```
-
-## Mettre à jour la configuration
-
-```bash
+```sh
 cd /etc/nixos
-git status
-git diff
-sudo nixos-rebuild test --flake .#homelab
-sudo nixos-rebuild switch --flake .#homelab
-```
-
-`test` active temporairement la génération et permet de vérifier un changement
-avant de le rendre persistant au prochain démarrage avec `switch`.
-
-## Retour arrière
-
-Si une nouvelle génération pose problème :
-
-1. démarrer sur une génération précédente depuis le menu de boot ;
-2. ou lancer `sudo nixos-rebuild switch --rollback` depuis un système encore
-   accessible ;
-3. lire les journaux avant de modifier de nouveau la configuration.
-
-## Sauvegarde LUKS
-
-Une modification des slots LUKS (mot de passe, recovery key, TPM) mérite une
-nouvelle sauvegarde du header. Elle doit être copiée hors du serveur et traitée
-comme une information sensible. Ne jamais la committer.
-
-Les sauvegardes automatisées du système et des futurs services feront l'objet
-d'un document dédié dès que la destination sera choisie.
-
-## Maintenance Nix
-
-Le système effectue automatiquement deux opérations le dimanche :
-
-- garbage collection à partir de 03:15, avec un délai aléatoire maximal de
-  30 minutes ;
-- optimisation du store à partir de 04:15, avec le même délai aléatoire.
-
-Le garbage collector supprime les générations inutilisées âgées de plus de
-30 jours. La génération active et les chemins encore référencés restent
-protégés par les racines du store Nix.
-
-Les mises à jour de nixpkgs restent manuelles. Pour mettre à jour uniquement
-l'entrée `nixpkgs` du flake :
-
-```bash
-cd /etc/nixos
-sudo nix flake update nixpkgs --flake /etc/nixos
+nix flake update nixpkgs
 git diff -- flake.lock
 ```
 
-Vérifier et construire avant toute activation :
+Ne pas changer system.stateVersion comme une version de paquet.
+Lanzaboote et toute évolution de boot nécessitent une validation spécifique
+Secure Boot/PCRLock et un moyen de récupération prêt.
 
-```bash
-git diff --check
-nix eval --raw .#nixosConfigurations.homelab.config.system.build.toplevel.drvPath
-nix build .#nixosConfigurations.homelab.config.system.build.toplevel --no-link
-sudo nixos-rebuild test --flake .#homelab
+GC : dimanche 03:15, délai aléatoire jusqu'à 30 minutes, âge 30 jours.
+Optimisation : dimanche 04:15, même délai ; timers persistants.
+Cela ne promet pas la conservation indéfinie d'anciennes générations.
+Lanzaboote déclare quatre entrées ; contrôler le menu réellement disponible.
+
+## 4. Retour arrière hôte
+
+Si l'hôte reste accessible, après autorisation :
+
+```sh
+sudo nixos-rebuild switch --rollback
 ```
 
-Après les contrôles fonctionnels, rendre la génération permanente :
+Sinon, choisir une génération précédente depuis la console/menu de démarrage.
+Capturer le résultat et le motif ; réconcilier ensuite le code Git pour éviter
+le redéploiement de la même erreur. Une génération précédente ne restaure
+ni une base applicative ni un secret supprimé.
 
-```bash
-sudo nixos-rebuild switch --flake .#homelab
-```
+## 5. Vérifications privilégiées opérateur
 
-Si le réseau ou SSH change, conserver la session en cours et tester une seconde
-connexion avant le `switch`.
-
-## Portainer et Docker
-
-Portainer est volontairement le seul conteneur déclaré par NixOS. Après son
-premier `switch`, ouvrir depuis un appareil du LAN :
-
-```text
-https://192.168.1.69:9443
-```
-
-Le certificat est auto-signé au premier démarrage : cette exception est limitée
-à l'amorçage de Portainer avant le déploiement de Caddy. Depuis un poste de
-confiance, vérifier l'adresse et l'empreinte hors bande avant toute exception,
-puis créer sans attendre le premier compte administrateur (mot de passe unique
-d'au moins 12 caractères). L'environnement Docker local doit être détecté
-automatiquement. Lors d'une recréation du volume `portainer_data`, préparer une
-fenêtre de maintenance et limiter temporairement 9443 au seul poste
-d'administration avant de créer ce compte.
-
-Vérifier la plateforme sans donner le socket Docker au compte `sobek` :
-
-```bash
-sudo systemctl status docker docker-lan-guard docker-portainer
-sudo docker ps
+```sh
+sudo sbctl status
+sudo cryptsetup status cryptroot
 sudo iptables -S DOCKER-USER
-sudo ss -lntp | grep ':9443'
+sudo iptables -S HOMELAB-DOCKER-GUARD
+sudo ip6tables -S DOCKER-USER
+sudo ip6tables -S HOMELAB-DOCKER-GUARD
+sudo docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
 ```
 
-`docker-lan-guard` doit être actif avant `docker-portainer`. La règle
-`HOMELAB-DOCKER-GUARD` limite les ports publiés au LAN quelle que soit
-l'interface physique ; ne pas la retirer pour "faire marcher" un service. Les
-seuls retours autorisés concernent la boucle locale et les bridges Docker, pour
-préserver les flux internes.
+Attendus : Secure Boot activé, cryptroot actif, garde référencée, seuls les
+ports documentés publiés. Pas de socket Docker attribué à sobek pour simplifier
+un diagnostic. Ne pas exporter docker inspect complet : il peut contenir des secrets.
 
-Depuis un appareil d'administration Tailscale autorisé, l'accès distant privé
-utilise le certificat HTTPS géré par Tailscale :
+## 6. Journaux et audit
 
-```text
-https://homelab.tail239aaa.ts.net
+journald persistant : plafond configuré 512M, réserve 2G, rétention maximale un
+mois. auditd : 10 fichiers de 50 Mo, rotation ; suspension possible si disque
+plein/erreur ; failureMode printk privilégie disponibilité. Quotas et durées ne
+garantissent pas une conservation minimale. Pas d'export centralisé établi.
+
+Opérateur : consulter le journal de l'unité affectée, période bornée, expurger
+avant partage. Clés audit : nixos-configuration, ssh-configuration,
+secure-boot-keys. Pas de debug webhook ni de collecte d'environnement.
+
+Le snapshot quotidien ajoute un délai aléatoire de 15 min. sobek lit le dernier
+snapshot curaté via homelab-audit ; aucun sudo ou socket donné à l'outil d'audit.
+L'opérateur peut lancer le collecteur autorisé :
+
+```sh
+sudo systemctl start homelab-security-snapshot.service
 ```
 
-Ce relais est intentionnellement réservé au tailnet : ne pas remplacer
-`tailscale serve` par Tailscale Funnel. Vérifier son état avec :
+Chaque fichier peut contenir une erreur de capture : présence du fichier ≠
+succès du contrôle. Les preuves ne sont pas publiées brutes dans Git.
+La politique tmpfiles déclare un âge de nettoyage 14 jours ; vérifier son
+exécution plutôt que promettre une purge garantie.
 
-```bash
-tailscale serve status
-```
+## 7. Cadence d'exploitation
 
-Ne pas activer les ports 80, 443, 8000 ou 9000 par défaut. Un premier service
-doit avoir un compose/stack versionné dans un dépôt privé, ses données et sa
-sauvegarde documentées, puis être déployé depuis Portainer. La mise à jour de
-Portainer consiste à modifier le tag **et le digest** d'image dans
-`modules/containers.nix`, revoir le diff, reconstruire puis vérifier que le
-volume `portainer_data` est toujours présent.
+| Quand | Vérifier | Trace |
+| --- | --- | --- |
+| Après chaque activation | Accès, unités, images/ports, sondes, collecte | Commit + génération + résultat |
+| Chaque semaine | Stockage, EFI, rétention, alertes bruyantes | Note datée si action |
+| Toutes les deux semaines | Avis et versions amont | Mise à jour ou report motivé |
+| Chaque mois | ACL/comptes, exceptions TLS, budget ressources | Décision et actions |
+| Après incident | Cause, effet, correction et retest | Postmortem sans secret |
 
-## Cadence de sécurité
-
-Les mises à jour restent manuelles pour préserver une revue humaine de la
-chaîne de démarrage et du réseau, mais elles suivent désormais une cadence
-explicite :
-
-- `sobek` consulte au moins toutes les deux semaines les avis NixOS et les
-  versions publiées de Portainer, Caddy, Uptime Kuma et Netdata ;
-- un correctif de sécurité connu pour un service exposé au LAN est évalué sous
-  sept jours ; les autres mises à jour sont regroupées dans la revue mensuelle ;
-- chaque mise à jour d'image vérifie le nouveau digest publié par l'éditeur,
-  puis suit `nixos-rebuild test` avant `switch` ;
-- le résultat (mise à jour, report et raison) est noté dans le commit ou dans
-  `DECISIONS.md`, sans y copier de secret.
-
-Les digests actuels ont été vérifiés le 29 septembre 2026 auprès de Docker Hub :
-
-| Service | Référence revue |
-| --- | --- |
-| Portainer CE | `2.39.0@sha256:3267f1869e0fa87b843c55f7fd848f9e3001367d053505f4cb8c664e4a997996` |
-| Caddy | `2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b` |
-| Uptime Kuma | `2.5.5@sha256:c74379ac4509ce2d2c2633f509e67003ee2e45b6e995c5e43fc101f45a0e1fbe` |
-| Netdata | `v2.11.1@sha256:04218b2713bad4990ecd0c3dd9424bbf1a687bf72afb7b5f188c1e25e3619142` |
+Pas de rotation de clé improvisée sans vérifier les utilisateurs dépendants.
+Gestion des secrets : [DATA.md](DATA.md). Sauvegardes : chantier propriétaire
+différé ; aucune configuration ou opération réalisée ici.

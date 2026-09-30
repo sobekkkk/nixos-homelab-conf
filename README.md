@@ -1,102 +1,85 @@
-# NixOS Homelab
+# Homelab · Architecture & exploitation
 
-Bienvenue dans la configuration NixOS de mon homelab personnel. C'est un projet
-pour apprendre, expérimenter et héberger des services sans perdre de vue deux
-choses simples : comprendre ce qui tourne, et pouvoir revenir en arrière.
+Un homelab personnel pour apprendre l'administration système et héberger ses
+services. NixOS décrit l'hôte ; Docker Compose décrit les applications ; Portainer
+applique leur configuration Git. L'administration reste privée, en LAN ou via
+Tailscale.
 
-Le dépôt est volontairement modulaire. Il n'a pas besoin d'être un projet
-"parfait" pour être utile : les choix sont documentés au fur et à mesure et les
-améliorations sont bienvenues.
+Ce dossier reprend les habitudes d'un design document et d'un manuel SRE, à
+l'échelle d'une seule machine : pas de haute disponibilité fictive, de
+certification implicite ni de garantie « tout est sécurisé ».
 
-## État actuel
+## Vue d'ensemble
 
-- NixOS 26.05, configuration gérée avec des flakes ;
-- Codex CLI installé de manière déclarative pour assister l'administration ;
-- disque système chiffré avec LUKS2 ;
-- déverrouillage TPM2 + PIN, lié au démarrage mesuré (PCR 0, 4 et 7) ;
-- Secure Boot avec Lanzaboote et `sbctl` ;
-- SSH accessible depuis le réseau local et, après l'activation de Tailscale,
-  depuis les appareils d'administration autorisés du tailnet ;
-- pare-feu nftables sans port ouvert globalement ;
-- AppArmor, paramètres noyau de durcissement, journaux persistants et audit
-  local des fichiers sensibles.
-- Docker local, avec Portainer CE comme interface unique des conteneurs ;
-- Portainer disponible uniquement en HTTPS sur le LAN, avec une garde dédiée
-  contre le contournement du pare-feu par les ports Docker publiés.
-- HTTPS local avec Caddy sur le LAN : Portainer et la supervision sont servis
-  sous les noms `*.home.arpa`, sans exposition Internet.
-- Uptime Kuma, isolé derrière Caddy et géré comme stack Portainer ;
-- Netdata, isolé derrière Caddy, pour les métriques détaillées du serveur,
-  systemd et des workloads Docker sans socket Docker ;
-- modèle GitOps documenté pour que les prochaines applications Docker soient
-  déployées depuis une source versionnée.
-
-## Organisation
-
-```text
-.
-├── flake.nix                 # Point d'entrée de la configuration
-├── hosts/homelab/            # Ce qui est propre à cette machine
-└── modules/                  # Briques réutilisables : boot, SSH, réseau…
+```mermaid
+flowchart LR
+    Admin[Administrateur] --> LAN[LAN de confiance]
+    Admin --> Tail[Tailscale privé]
+    LAN --> Host[Hôte NixOS]
+    Tail --> Host
+    Infra[Git · infrastructure] -->|build / test / switch| Host
+    Apps[Git privé · applications] -->|polling| P[Portainer CE]
+    Host --> Docker[Docker Engine]
+    P -->|socket privilégié| Docker
+    Docker --> C[Caddy · HTTPS]
+    Docker --> K[Kuma · disponibilité]
+    Docker --> N[Netdata · ressources]
+    K --> Discord[Discord · notifications sortantes]
+    N --> Discord
 ```
 
-Les explications un peu plus détaillées sont dans [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-et les commandes du quotidien dans [docs/OPERATIONS.md](docs/OPERATIONS.md). La
-configuration et les précautions propres à l'agent sont décrites dans
-[docs/CODEX.md](docs/CODEX.md). Le périmètre de sécurité est défini dans
-[SECURITY.md](SECURITY.md) et les scénarios à auditer dans
-[docs/THREAT_MODEL.md](docs/THREAT_MODEL.md). Les règles simples pour les
-conteneurs sont dans [docs/CONTAINERS.md](docs/CONTAINERS.md). La supervision
-locale est expliquée dans [docs/SUPERVISION.md](docs/SUPERVISION.md).
-Le chemin prévu pour les applications Docker est décrit dans
-[docs/GITOPS.md](docs/GITOPS.md).
+Vue logique ; les chemins réseau exacts sont dans [NETWORK.md](docs/NETWORK.md).
 
-## Appliquer une modification
+## Documentation
 
-Depuis le serveur :
+| Besoin | Document |
+| --- | --- |
+| Comprendre les composants et les compromis | [Architecture](docs/ARCHITECTURE.md) |
+| Trouver une URL, un port ou un chemin TLS | [Réseau et accès](docs/NETWORK.md) |
+| Connaître l'état réellement attesté | [État et limites](docs/STATUS.md) |
+| Déployer une modification depuis Git | [GitOps et changements](docs/GITOPS.md) |
+| Administrer, mettre à jour, revenir en arrière | [Exploitation](docs/OPERATIONS.md) |
+| Diagnostiquer une panne | [Runbooks](docs/RUNBOOKS.md) |
+| Comprendre les métriques et alertes | [Supervision](docs/SUPERVISION.md) |
+| Ajouter un service proprement | [Contrat conteneurs](docs/CONTAINERS.md) |
+| Recréer la plateforme et inventorier son état | [Amorçage](docs/BOOTSTRAP.md), [données](docs/DATA.md) |
+| Examiner les frontières de confiance | [Politique](SECURITY.md), [menaces](docs/THREAT_MODEL.md) |
+| Retrouver les choix et preuves historiques | [Décisions](DECISIONS.md), [rapports](security/reports/README.md) |
 
-```bash
-cd /etc/nixos
-sudo nixos-rebuild switch --flake .#homelab
-```
+L'[index](docs/README.md) précise l'ordre de lecture et la convention de preuve.
 
-Pour tester une génération sans la définir comme génération de démarrage :
+## Sources de vérité
 
-```bash
-sudo nixos-rebuild test --flake .#homelab
-```
+- Ce dépôt public : `flake.nix`, `flake.lock`, `hosts/`, `modules/`.
+- [homelab-apps](https://github.com/sobekkkk/homelab-apps), dépôt privé :
+  Compose, images épinglées, configurations et guides par application.
+- Serveur : génération active, état Docker, volumes, secrets et sessions.
+  Un commit poussé ne prouve pas qu'il est déployé.
+- Services externes : ACL et identité Tailscale, accès GitHub, webhooks Discord.
+  Ils ne sont pas complètement provisionnés par ces dépôts.
 
-Une génération NixOS précédente reste disponible dans le menu de démarrage : ne
-pas improviser une commande risquée reste malgré tout la meilleure stratégie.
+`stacks/uptime-kuma/compose.yaml` est une référence historique d'amorçage,
+pas la source du déploiement actuel. Ne pas en faire une seconde stack.
 
-## Sécurité et secrets
+## Situation au 30 septembre 2026
 
-Ce dépôt doit rester publiable. Ne jamais y ajouter :
+Le socle, l'accès privé et les interfaces Kuma/Netdata ont fait l'objet de
+vérifications précédentes. La réception des tests Discord Netdata a été montrée
+par l'opérateur. Le chargement des 17 nouvelles règles reste à attester après
+le correctif applicatif `768f95f`. Les audits ont des limites explicites :
+voir [STATUS.md](docs/STATUS.md), pas une checklist marketing.
 
-- clé privée, mot de passe, token ou fichier `.env` ;
-- clé de récupération LUKS ou sauvegarde du header LUKS ;
-- données personnelles ou sauvegardes de services.
+Les sauvegardes sont prises en charge séparément par le propriétaire et hors
+du chantier actuel. Ce dossier n'en revendique ni configuration ni test.
 
-Les sauvegardes de header LUKS doivent rester chiffrées, hors du serveur et hors
-de Git.
+## Principes
 
-## Feuille de route
+- Administration uniquement LAN/Tailscale ; pas de Funnel.
+- SSH par clé ; pas de login root distant ni de forwarding SSH.
+- Pas de groupe Docker pour `sobek` ; Portainer est privilégié.
+- Aucun secret dans Git, un ticket, une capture ou une commande partagée.
+- Documentation et contrôles mis à jour avant chaque commit fonctionnel.
+- Diff relu, activation autorisée et retour arrière prévu avant changement.
 
-- [x] Chiffrement du système, Secure Boot et TPM2 ;
-- [x] Socle réseau et SSH durci ;
-- [x] Audit local et maintenance régulière du store Nix ;
-- [x] Politique de sécurité et modèle de menaces documentés ;
-- [x] Base Docker et Portainer CE restreints au LAN ;
-- [ ] Sauvegardes automatisées vers une destination à choisir ;
-- [x] Premier service de supervision déployé sans exposition Internet ;
-- [x] HTTPS local unifié et supervision Uptime Kuma déployée ;
-- [x] Observabilité temps réel de l'hôte et des conteneurs avec Netdata ;
-- [x] Dépôt privé et GitOps par polling pour les applications Docker ;
-- [ ] Revue de sécurité de l'infrastructure avec un périmètre explicite.
-
-## Participer ou proposer une idée
-
-Pas besoin d'être expert. Une correction de documentation, une question ou une
-idée de service est déjà une contribution utile. Le petit guide
-[CONTRIBUTING.md](CONTRIBUTING.md) explique la manière de garder les changements
-simples et vérifiables.
+[Contribuer](CONTRIBUTING.md) · [Consignes agents](AGENTS.md) ·
+[Usage Codex existant](docs/CODEX.md).

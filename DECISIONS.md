@@ -1,5 +1,20 @@
 # Décisions de sécurité
 
+## 2026-09-30 — Dossier d'architecture et manuel d'exploitation
+
+La documentation est restructurée en architecture, réseau/TLS, GitOps,
+exploitation, runbooks, supervision, données/secrets, amorçage et état attesté.
+Les schémas Mermaid restent dans Git pour suivre les changements de code.
+Le dossier reprend une démarche d'ingénierie/SRE, sans inventer de cluster,
+certification, SLO ni haute disponibilité.
+
+Les deux sources sont figées pour cette revue : infrastructure main `3de2ac3`,
+applications main `768f95f`. Les rapports historiques restent inchangés.
+Les sauvegardes sont différées au propriétaire conformément à sa demande ;
+aucune opération de sauvegarde, de déploiement ou de durcissement n'est lancée.
+Les contrôles portent sur les liens et blocs documentaires et la concordance
+des descriptions avec les sources, pas sur un nouveau retest serveur.
+
 Ce journal explique simplement les choix qui demandent un compromis. Il ne
 contient jamais de secret, de clé, de jeton ou de donnée de volume.
 

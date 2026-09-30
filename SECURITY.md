@@ -9,7 +9,8 @@ que les contrôles fonctionnent.
 Le dépôt configure une unique machine NixOS personnelle nommée `homelab`. Elle
 sert aujourd'hui de base d'administration et d'expérimentation. Docker et
 Portainer CE y forment une plateforme de conteneurs, avec une supervision locale
-derrière un proxy HTTPS. Aucun accès Internet n'est prévu.
+derrière un proxy HTTPS. Aucun accès entrant public Internet n'est prévu ;
+les sorties vers les fournisseurs et les notifications sont nécessaires.
 
 Le périmètre principal comprend :
 
@@ -72,7 +73,8 @@ Une modification ne doit pas rompre les propriétés suivantes :
 - aucune clé privée, passphrase, recovery key, sauvegarde LUKS, token ou donnée
   de service ne doit entrer dans Git, les logs ou une conversation ;
 - aucune connexion SSH par mot de passe, aucun login `root` distant et aucun
-  transfert SSH ne doivent être possibles ;
+  forwarding SSH ne doivent être possibles ; les transferts de fichiers
+  authentifiés ne sont pas interdits par cette configuration ;
 - seul `sobek` doit pouvoir ouvrir une session SSH et l'élévation doit continuer
   à demander son mot de passe ;
 - aucun port entrant ne doit être ouvert globalement par défaut ;
@@ -147,6 +149,14 @@ Ils redeviennent pertinents lorsqu'une configuration suivie ici leur accorde une
 capacité, un secret ou une exposition susceptible de casser un invariant.
 
 ## Limites connues et contrôles compensatoires
+
+Le registre actuel est dans [docs/STATUS.md](docs/STATUS.md). En particulier,
+Netdata n'a pas de socket Docker mais dispose de PID hôte, SYS_PTRACE, d'un
+montage racine hôte et de D-Bus : le mode `ro` n'est pas un confinement complet.
+Serve utilise `https+insecure` pour ses backends ; les certificats de façade
+ne prouvent pas une confiance TLS de bout en bout. Kuma dispose désormais
+d'un bridge NAT de sortie, sans allowlist limitée à Discord. Ces contraintes
+sont documentées, pas remédiées par la présente mise à jour documentaire.
 
 - `sobek` est un administrateur `wheel` : sa compromission locale peut mener à
   `root`, mais `sudo` exige un mot de passe et utilise un pseudo-terminal.
