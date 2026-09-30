@@ -28,3 +28,13 @@ Ne pas enregistrer de clés, tokens, cookies, mots de passe, contenu de volumes
 ou données personnelles. Les sorties servant de preuve sont horodatées et
 stockées hors Git ; les rapports ne contiennent que des extraits expurgés et des
 références d'artefacts.
+
+## Publication unattended autorisée
+
+Après un baseline autorisé, le runner versionné peut créer et pousser une
+branche neuve nommée codex/pentest-*. Cette exception est limitée à un unique
+rapport expurgé sous security/reports/ après validation; elle n'autorise ni push
+sur main, ni pull request automatique, ni modification de configuration, ni
+publication de preuve brute. L'absence d'authentification Codex doit être
+signalée comme action différée, jamais contournée par une clé copiée dans le
+dépôt ou l'environnement.

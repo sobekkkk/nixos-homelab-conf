@@ -22,7 +22,7 @@ checkpoint humain défini dans `ROE.md`.
 2. Créer un dossier de preuves hors du dépôt, accessible uniquement à l'opérateur.
 3. Après activation de `homelab-security-snapshot`, lire le dernier dossier dans
    `/var/lib/homelab-security-snapshot/latest` avec `sobek`.
-4. Lancer le script Windows uniquement contre l'adresse explicitement autorisée :
+4. Lancer le script Windows contre l'adresse explicitement autorisée et les cinq ports de scope.yml :
    `./security/scripts/windows-baseline.ps1`.
 5. Utiliser `profiles/nuclei.yaml` pour Nuclei et suivre
    [profiles/zap-baseline.md](profiles/zap-baseline.md) pour ZAP.

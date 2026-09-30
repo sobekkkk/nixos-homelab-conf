@@ -48,6 +48,8 @@ confiance, la cause racine, la preuve, la reproduction et le retest.
 
 Lorsqu'une tâche demande explicitement un "unattended baseline":
 
+- utiliser exclusivement ./security/scripts/run-unattended-baseline.sh plutôt
+  qu'une succession de commandes improvisées ;
 - ne jamais attendre une intervention humaine ;
 - exécuter intégralement toutes les actions autorisées par `security/ROE.md`;
 - lorsqu'une action nécessiterait une approbation humaine, NE PAS l'exécuter ;
@@ -57,4 +59,15 @@ Lorsqu'une tâche demande explicitement un "unattended baseline":
 - ne jamais remédier automatiquement à une vulnérabilité ;
 - ne jamais modifier la configuration NixOS, Docker, nftables, les comptes,
   les services ou les données ;
-- terminer le rapport même lorsque certaines vérifications sont impossibles.
+- terminer le rapport même lorsque certaines vérifications sont impossibles ;
+- conserver les preuves sous l'état privé de sobek, jamais dans Git ;
+- ne publier que la branche codex/pentest-* générée par le runner, jamais main,
+  et seulement après validation du rapport.
+
+## Instructions et skill
+
+Les consignes de ce fichier restent courtes et définissent les frontières de
+sécurité du dépôt. Le workflow spécialisé est dans le skill versionné
+.agents/skills/homelab-pentest; l'utiliser seulement pour une baseline
+autorisée. Pour les sujets OpenAI/Codex, consulter d'abord la documentation
+développeur OpenAI configurée, puis documenter la décision.

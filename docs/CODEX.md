@@ -60,3 +60,10 @@ codex
 ```
 
 La commande `/init` peut ensuite créer un fichier `AGENTS.md` propre au projet.
+
+## Baseline de sécurité unattended
+
+Le workflow autonome est documenté dans `CODEX_AUTOMATION.md` et
+`../security/README.md`. Il installe un skill versionné, exécute uniquement
+les contrôles autorisés, conserve les preuves hors Git et ne pousse qu'un
+rapport validé sur une branche dédiée.
