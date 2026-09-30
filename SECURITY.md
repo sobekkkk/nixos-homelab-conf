@@ -91,11 +91,11 @@ Une modification ne doit pas rompre les propriétés suivantes :
   Serve, et les ports 80, 8000 et 9000 restent absents ;
 - pendant la migration seulement, Portainer peut conserver TCP/9443 vers le LAN
   afin de valider Caddy ; il doit être retiré une fois le proxy validé ;
-- Uptime Kuma doit rester sans socket Docker et sans port non-boucle-locale,
-  sur son réseau privé, avec `no-new-privileges`; seul `127.0.0.1:3001` est
-  permis comme destination de Tailscale Serve. Ses capacités Docker par défaut
-  sont conservées pour initialiser son volume de données et devront être réduites
-  seulement après un profil validé ;
+- Uptime Kuma doit rester sans socket Docker ni port hôte, sur son réseau privé,
+  avec `no-new-privileges`; seul Caddy peut le joindre, et Tailscale Serve
+  rejoint Caddy pour le relayer. Ses capacités Docker par défaut sont conservées
+  pour initialiser son volume de données et devront être réduites seulement après
+  un profil validé ;
 - le démarrage normal doit conserver Secure Boot et le déverrouillage LUKS2 par
   TPM2 + PIN, sans retirer les moyens de récupération hors machine ;
 - une configuration non évaluée ou non construite ne doit pas être activée ;

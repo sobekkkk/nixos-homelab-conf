@@ -30,8 +30,8 @@
     };
   };
 
-  # Kuma écoute seulement sur une boucle locale Docker. Tailscale Serve lui
-  # attribue ce point d'entrée HTTPS séparé, réservé au tailnet.
+  # Caddy est l'unique point d'entrée de Kuma. Tailscale Serve conserve le
+  # nom MagicDNS en amont ; Caddy sélectionne alors son vhost Kuma privé.
   systemd.services.tailscale-uptime-kuma-serve = {
     description = "Publish Uptime Kuma privately through Tailscale Serve";
     requires = [ "tailscaled.service" ];
@@ -40,7 +40,7 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8443 http://127.0.0.1:3001";
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8443 https+insecure://192.168.1.69:443";
       ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8443 off";
     };
   };

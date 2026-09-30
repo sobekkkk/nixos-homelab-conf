@@ -165,3 +165,13 @@ NAT d'une publication de port après un redémarrage. Le paquet `nftables` est
 ajouté uniquement au `PATH` du service Docker. Cela rétablit la publication
 locale de Kuma tout en laissant la garde `DOCKER-USER` et les restrictions
 d'interface inchangées.
+
+## 2026-09-30 — Kuma via Caddy plutôt qu'un port Docker local
+
+La publication `127.0.0.1:3001` de Kuma restait inactive après redémarrage du
+daemon, malgré sa présence dans la configuration du conteneur. La solution
+retenue ne dépend plus du NAT Docker : Kuma reste sur son réseau privé et Caddy
+est son unique proxy. Tailscale Serve rejoint Caddy sur l'adresse LAN locale,
+en conservant le nom MagicDNS qui sélectionne le vhost Kuma. Le port public du
+tailnet reste 8443, sans Funnel ni ouverture de routeur. Les essais de proxy
+utilisateur et d'ajout de `nft` au démon sont retirés : ils ne sont plus utiles.

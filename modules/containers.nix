@@ -9,17 +9,9 @@
     logDriver = "journald";
     daemon.settings = {
       "live-restore" = true;
-      # Le proxy utilisateur Docker reste nécessaire aux publications de
-      # boucle locale. Kuma est explicitement lié à 127.0.0.1:3001 : ce
-      # réglage ne lui ouvre aucune interface réseau supplémentaire.
-      "userland-proxy" = true;
+      "userland-proxy" = false;
     };
   };
-
-  # Docker 29 programme les publications de ports au travers de nftables. Le
-  # démon systemd reçoit donc explicitement l'exécutable `nft`, sans élargir
-  # les droits de l'utilisateur ni l'exposition des conteneurs.
-  systemd.services.docker.path = [ pkgs.nftables ];
 
   virtualisation.oci-containers = {
     backend = "docker";
