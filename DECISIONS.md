@@ -156,3 +156,12 @@ effective avec `userland-proxy = false`. Le proxy utilisateur Docker est donc
 réactivé. Kuma reste strictement sur la boucle locale : aucune interface LAN,
 Tailscale ou Internet n'est ajoutée. Cette dépendance est préférable à une
 adresse IP de conteneur, qui changerait lors d'un redéploiement GitOps.
+
+## 2026-09-30 — nftables disponible pour Docker
+
+Les journaux du démon Docker 29 ont montré que `nft` était absent de son
+environnement systemd. Le démon ne pouvait donc pas réinstaller les règles
+NAT d'une publication de port après un redémarrage. Le paquet `nftables` est
+ajouté uniquement au `PATH` du service Docker. Cela rétablit la publication
+locale de Kuma tout en laissant la garde `DOCKER-USER` et les restrictions
+d'interface inchangées.

@@ -16,6 +16,11 @@
     };
   };
 
+  # Docker 29 programme les publications de ports au travers de nftables. Le
+  # démon systemd reçoit donc explicitement l'exécutable `nft`, sans élargir
+  # les droits de l'utilisateur ni l'exposition des conteneurs.
+  systemd.services.docker.path = [ pkgs.nftables ];
+
   virtualisation.oci-containers = {
     backend = "docker";
     containers.portainer = {
