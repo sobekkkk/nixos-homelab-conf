@@ -128,3 +128,13 @@ qu'un webhook : le serveur reste non publié sur Internet et chaque mise à jour
 applicative part d'un commit relu. Les identifiants Git, lorsqu'ils seront
 nécessaires, auront seulement un droit de lecture sur ce dépôt et resteront
 dans Portainer, jamais dans la configuration NixOS ou dans Git.
+
+## 2026-09-30 — Migration d'Uptime Kuma vers GitOps
+
+Le premier stack applicatif a été recréé depuis le dépôt privé `homelab-apps`.
+Portainer suit `apps/uptime-kuma/compose.yaml` toutes les 15 minutes, sans
+redéploiement forcé ni webhook Internet. La suppression contrôlée de l'ancien
+stack n'a pas supprimé les volumes nommés : Kuma a repris son état et est
+*healthy*, tandis que Caddy est *running*. Le nom Portainer
+`uptime-kuma-gitops` évite une collision avec l'ancien enregistrement pendant
+la migration ; il n'affecte ni les volumes, ni l'exposition réseau.

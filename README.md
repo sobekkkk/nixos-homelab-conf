@@ -88,7 +88,7 @@ de Git.
 - [ ] Sauvegardes automatisées vers une destination à choisir ;
 - [x] Premier service de supervision déployé sans exposition Internet ;
 - [x] HTTPS local unifié et supervision Uptime Kuma déployée ;
-- [ ] Dépôt privé et GitOps pour les applications Docker ;
+- [x] Dépôt privé et GitOps par polling pour les applications Docker ;
 - [ ] Revue de sécurité de l'infrastructure avec un périmètre explicite.
 
 ## Participer ou proposer une idée

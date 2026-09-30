@@ -61,8 +61,8 @@ historique) ne sont pas publiés. Les données de Portainer vivent dans le volum
 Docker nommé `portainer_data`; elles ne sont pas encore couvertes par une
 sauvegarde automatisée.
 
-Les applications seront des stacks Portainer documentés et versionnés dans un
-dépôt privé distinct. Portainer les lira en GitOps par polling, sans webhook
+Les applications sont des stacks Portainer documentés et versionnés dans un
+dépôt privé distinct. Portainer les lit en GitOps par polling, sans webhook
 public. Elles ne doivent pas être lancées à la main sur l'hôte ou ajouter un
 port public sans une décision et une revue explicites. Le détail du flux est
 dans [`GITOPS.md`](GITOPS.md).

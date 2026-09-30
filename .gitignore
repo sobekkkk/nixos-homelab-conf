@@ -1,0 +1,2 @@
+# Clone local du dépôt applicatif privé : il ne fait pas partie de la flake NixOS.
+/homelab-apps/

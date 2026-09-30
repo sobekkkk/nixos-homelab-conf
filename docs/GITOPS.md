@@ -50,24 +50,19 @@ Les images restent épinglées par tag et digest. Une mise à jour est donc un
 commit relu, suivi du déploiement automatique par Portainer, plutôt qu'un
 contenu changé silencieusement sous `latest`.
 
-## État de transition
+## Premier stack GitOps
 
-Le stack Uptime Kuma est pour l'instant une exception documentée dans ce dépôt
-public, sans secret. Il a été déployé une première fois depuis l'éditeur
-Portainer à partir du compose versionné. Dès que `homelab-apps` existe, il sera
-migré vers un stack Git ; la recréation contrôlée conservera ses volumes.
+Uptime Kuma a été migré le 30 septembre 2026 vers le dépôt privé
+`homelab-apps`, chemin `apps/uptime-kuma/compose.yaml`. Portainer le suit sous
+le nom `uptime-kuma-gitops`, avec un polling de 15 minutes. La recréation a
+conservé les trois volumes nommés, puis Caddy et Kuma ont été vérifiés
+respectivement *running* et *healthy*.
 
-## Conditions avant la migration
+Le jeton GitHub associé est limité à la lecture du seul dépôt applicatif et est
+conservé par Portainer, jamais dans Git ou dans NixOS. Aucun webhook n'est
+exposé : le serveur reste inaccessible depuis Internet.
 
-1. Créer le dépôt GitHub privé `homelab-apps`.
-2. Créer dans ce dépôt le dossier `apps/uptime-kuma/` et y déplacer le compose
-   versionné, sans données de volume ni secret.
-3. Donner à Portainer un accès Git en lecture seule : clé de déploiement ou
-   jeton GitHub limité au seul dépôt, conservé uniquement dans Portainer.
-4. Recréer le stack Uptime Kuma depuis Git, sans supprimer les volumes
-   existants, puis vérifier Caddy et Kuma.
-5. Activer un polling modéré (par exemple toutes les 15 minutes) ; aucun
-   webhook public et aucune option de redéploiement forcé par défaut.
-
-La migration du stack est une opération applicative : elle doit être faite dans
-une fenêtre où une courte indisponibilité de la supervision est acceptable.
+Pour chaque nouveau service, copier cette structure, relire le commit et créer
+un stack Git Portainer avec le polling. Une modification locale dans Portainer
+serait écrasée par la source Git : elle ne doit donc jamais être utilisée comme
+source de vérité.

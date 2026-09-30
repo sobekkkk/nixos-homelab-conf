@@ -39,13 +39,12 @@ de vérifier proprement l'initialisation du volume Kuma sans donner de droits
 Docker à l'utilisateur de l'hôte. Les conteneurs `caddy` et `uptime-kuma` sont
 respectivement *running* et *healthy*.
 
-Le mode cible reste un stack Git : lorsque le dépôt des services aura été rendu
-privé, créer dans Portainer un stack nommé `uptime-kuma` depuis ce dépôt, avec
-le chemin `stacks/uptime-kuma/compose.yaml`. Jusque-là, toute modification doit
-partir d'un commit relu dans ce dépôt, puis être reproduite dans Portainer ; ne
-jamais modifier le stack uniquement dans son éditeur. Le Caddyfile est intégré
-au compose comme configuration Docker, donc aucun montage relatif ni fichier
-séparé n'est nécessaire.
+Le stack est maintenant lu par Portainer depuis le dépôt privé `homelab-apps`,
+chemin `apps/uptime-kuma/compose.yaml`, sous le nom `uptime-kuma-gitops`.
+Portainer vérifie le dépôt toutes les 15 minutes. Toute modification doit donc
+être commitée dans ce dépôt privé ; ne jamais modifier le stack uniquement dans
+son éditeur. Le Caddyfile est intégré au compose comme configuration Docker,
+donc aucun montage relatif ni fichier séparé n'est nécessaire.
 
 L'interface sera disponible à :
 
