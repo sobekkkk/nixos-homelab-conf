@@ -18,11 +18,12 @@ Le stack `stacks/uptime-kuma/compose.yaml` contient :
   par le réseau Docker privé `uptime-kuma-net` et Portainer par
   `homelab-proxy`.
 
-Kuma et Netdata n'ont aucun port hôte. Caddy publie TCP/443 uniquement sur `192.168.1.69`,
-et la garde Docker le limite au LAN. Tailscale Serve rejoint ce proxy et relaie
-Kuma vers le port HTTPS 8443 uniquement aux appareils autorisés du tailnet ;
-le port 443 Tailscale reste réservé à Portainer. Les ports 80, UDP/443, 3001,
-8000 et 9000 ne sont pas publiés.
+Kuma et Netdata n'ont aucun port hôte. Caddy publie TCP/443 sur `192.168.1.69`,
+et un listener dédié TCP/8444 sur cette même adresse, tous deux limités au LAN
+par la garde Docker. Tailscale Serve rejoint Caddy et relaie Kuma vers le port
+HTTPS 8443, Netdata vers TCP/8444, uniquement aux appareils autorisés du
+tailnet ; le port 443 Tailscale reste réservé à Portainer. Les ports 80,
+UDP/443, 3001, 8000, 9000 et 19999 ne sont pas publiés.
 
 Pour cette migration, Caddy joint Portainer en HTTPS sur le réseau Docker privé
 `homelab-proxy`, mais ne vérifie pas son certificat auto-signé en amont. Cette

@@ -200,3 +200,13 @@ les conteneurs. Cette visibilité n'est pas nécessaire pour les métriques de
 ressources : Netdata observe les cgroups en lecture seule, et Portainer reste
 l'inventaire et le point d'administration Docker. Ce compromis réduit fortement
 la portée d'une compromission de Netdata sans perdre la supervision utile.
+
+## 2026-09-30 — Relais Netdata séparé du vhost Kuma
+
+Les deux services Tailscale utilisent le même nom public du tailnet. Lorsqu'ils
+étaient tous deux relayés vers Caddy sur TCP/443, le nom HTTP du client pouvait
+sélectionner le vhost Kuma, même via le port externe 8444. Caddy publie donc un
+listener TCP/8444 distinct, lié uniquement à l'adresse LAN. Tailscale Serve le
+rejoint localement pour Netdata ; Kuma garde son relais vers le vhost HTTPS
+`status.home.arpa` sur 8443. Netdata reste sans port direct : seul Caddy est
+publié, et `docker-lan-guard` limite le listener intermédiaire au LAN.

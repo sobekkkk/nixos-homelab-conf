@@ -71,8 +71,9 @@ Le premier stack de supervision est stocké dans `stacks/uptime-kuma/`. Caddy
 expose TCP/443 sur l'adresse LAN `192.168.1.69` seulement, et garde Uptime Kuma
 sur un réseau Docker privé sans port hôte. Tailscale Serve rejoint Caddy
 localement en HTTPS, avec le nom statique `status.home.arpa`, et relaie Kuma en
-HTTPS privé sur le port 8443. Netdata suit le même modèle avec
-`netdata.home.arpa` sur le port 8444. Le port 443
+HTTPS privé sur le port 8443. Netdata utilise un listener Caddy dédié sur
+TCP/8444 lié exclusivement à l'adresse LAN, ce qui évite une ambiguïté de nom
+avec Kuma lorsque Tailscale relaie le client. Le port 443
 de l'adresse Tailscale reste réservé au relais HTTPS privé de Portainer. Caddy
 rejoint aussi Portainer et Netdata via le réseau `homelab-proxy`. Netdata n'a ni
 port hôte ni socket Docker : il observe les métriques hôte, systemd et cgroups

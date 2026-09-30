@@ -86,10 +86,11 @@ Une modification ne doit pas rompre les propriétés suivantes :
   groupe `docker`, et la garde `DOCKER-USER` doit s'activer avant tout
   conteneur qui publie un port ;
 - Caddy peut publier TCP/443 exclusivement sur `192.168.1.69` pour
-  `portainer.home.arpa`, `status.home.arpa` et `netdata.home.arpa`; le port 443
-  du tailnet reste réservé à Portainer Serve, Kuma utilise le port 8443 et
-  Netdata le port 8444 via Tailscale Serve, et les ports 80, 8000, 9000 et
-  19999 restent absents ;
+  `portainer.home.arpa`, `status.home.arpa` et `netdata.home.arpa`, ainsi que
+  TCP/8444 sur cette même adresse exclusivement comme cible du relais Netdata ;
+  le port 443 du tailnet reste réservé à Portainer Serve, Kuma utilise le port
+  8443 et Netdata le port 8444 via Tailscale Serve, et les ports 80, 8000, 9000
+  et 19999 restent absents ;
 - Netdata peut lire les pseudo-systèmes hôte nécessaires aux métriques, mais ne
   doit jamais recevoir le socket Docker, directement ou via un proxy qui permet
   de lire les données, journaux ou systèmes de fichiers des conteneurs ;

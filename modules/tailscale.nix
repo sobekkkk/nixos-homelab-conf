@@ -53,9 +53,9 @@
     };
   };
 
-  # Netdata reste une interface technique privée. Le nom local fournit le SNI
-  # attendu par Caddy, et le port tailnet dédié évite toute collision avec les
-  # relais Portainer (443) et Kuma (8443).
+  # Netdata reste une interface technique privée. Caddy possède un listener
+  # LAN dédié à ce relais : le Host du client tailnet ne peut ainsi pas être
+  # confondu avec le vhost Kuma, qui utilise Caddy sur 443.
   systemd.services.tailscale-netdata-serve = {
     description = "Publish Netdata privately through Tailscale Serve";
     requires = [ "tailscaled.service" ];
@@ -64,7 +64,7 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8444 https+insecure://netdata.home.arpa:443";
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8444 https+insecure://192.168.1.69:8444";
       ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8444 off";
     };
   };
