@@ -29,10 +29,11 @@ l'administration interactive et aux transferts de fichiers, sans devenir un
 relais vers d'autres services du réseau.
 
 Tailscale est installé directement sur l'hôte NixOS, jamais dans Docker. Il crée
-une interface virtuelle `tailscale0` reconnue par le pare-feu : l'accès à SSH
-depuis cette interface est déterminé par la politique du tailnet, tandis que
-`sshd` conserve ses contrôles de clé, de compte et de privilèges. Aucun port n'est
-ouvert sur le routeur ; le serveur n'annonce ni route de sous-réseau ni exit node.
+une interface virtuelle `tailscale0` sur laquelle nftables n'accepte que SSH.
+La politique du tailnet décide quels appareils peuvent atteindre ce service,
+tandis que `sshd` conserve ses contrôles de clé, de compte et de privilèges.
+Aucun port n'est ouvert sur le routeur ; le serveur n'annonce ni route de
+sous-réseau ni exit node.
 Portainer et les services Docker restent limités au LAN par `docker-lan-guard`.
 
 Docker publie ses ports après traduction NAT ; ces ports ne passent donc pas

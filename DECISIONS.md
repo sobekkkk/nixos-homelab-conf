@@ -64,3 +64,16 @@ frontière entre l'édition de la source et l'activation système.
   défaut, situation normale après `switch` sans reboot. Aucun redémarrage n'a
   été déclenché uniquement pour aligner ces numéros ; il sera validé avec une
   voie de récupération lors d'une maintenance planifiée.
+
+## 2026-09-30 — Tailscale limité à SSH
+
+Tailscale est exécuté sur l'hôte, et non dans Docker : il doit pouvoir joindre
+le réseau avant les conteneurs et rester disponible pour l'administration de
+récupération. L'interface `tailscale0` n'est pas déclarée « fiable » dans son
+ensemble. nftables accepte uniquement TCP/22 depuis cette interface ; ainsi un
+futur service écoutant sur l'hôte ne deviendra pas automatiquement accessible
+au tailnet.
+
+Le serveur ne sera ni routeur de sous-réseau, ni exit node, ni point de
+publication Tailscale Funnel. L'autorisation des appareils distants reste dans
+la politique du tailnet, puis SSH exige toujours la clé du compte `sobek`.

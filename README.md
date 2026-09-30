@@ -15,7 +15,8 @@ améliorations sont bienvenues.
 - disque système chiffré avec LUKS2 ;
 - déverrouillage TPM2 + PIN, lié au démarrage mesuré (PCR 0, 4 et 7) ;
 - Secure Boot avec Lanzaboote et `sbctl` ;
-- SSH accessible uniquement depuis le réseau local ;
+- SSH accessible depuis le réseau local et, après l'activation de Tailscale,
+  depuis les appareils d'administration autorisés du tailnet ;
 - pare-feu nftables sans port ouvert globalement ;
 - AppArmor, paramètres noyau de durcissement, journaux persistants et audit
   local des fichiers sensibles.

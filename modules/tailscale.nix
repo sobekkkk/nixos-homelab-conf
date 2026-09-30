@@ -6,7 +6,8 @@
   # et utilise DERP chiffré lorsqu'un chemin direct n'est pas disponible.
   services.tailscale.enable = true;
 
-  networking.firewall.trustedInterfaces = [
-    config.services.tailscale.interfaceName
-  ];
+  # L'interface ne devient pas globalement fiable : seul SSH y est accepté.
+  networking.firewall.extraInputRules = ''
+    iifname "${config.services.tailscale.interfaceName}" tcp dport 22 accept comment "SSH from trusted tailnet"
+  '';
 }
