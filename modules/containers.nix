@@ -9,7 +9,10 @@
     logDriver = "journald";
     daemon.settings = {
       "live-restore" = true;
-      "userland-proxy" = false;
+      # Le proxy utilisateur Docker reste nécessaire aux publications de
+      # boucle locale. Kuma est explicitement lié à 127.0.0.1:3001 : ce
+      # réglage ne lui ouvre aucune interface réseau supplémentaire.
+      "userland-proxy" = true;
     };
   };
 

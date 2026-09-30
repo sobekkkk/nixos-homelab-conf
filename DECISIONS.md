@@ -147,3 +147,12 @@ et le relaie exclusivement sur TCP/8443 pour les appareils autorisés. Ce port
 séparé évite une réécriture d'URL fragile et laisse TCP/443 au relais Portainer.
 La règle nftables est limitée à `tailscale0`; aucun Funnel, port routeur ou
 accès Docker supplémentaire n'est ajouté.
+
+## 2026-09-30 — Relais local Docker pour Kuma
+
+L'inspection de Kuma a confirmé la demande de publication
+`127.0.0.1:3001:3001`, mais le moteur Docker ne créait pas la destination
+effective avec `userland-proxy = false`. Le proxy utilisateur Docker est donc
+réactivé. Kuma reste strictement sur la boucle locale : aucune interface LAN,
+Tailscale ou Internet n'est ajoutée. Cette dépendance est préférable à une
+adresse IP de conteneur, qui changerait lors d'un redéploiement GitOps.
