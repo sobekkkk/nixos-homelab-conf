@@ -175,3 +175,12 @@ est son unique proxy. Tailscale Serve rejoint Caddy sur l'adresse LAN locale,
 en conservant le nom MagicDNS qui sélectionne le vhost Kuma. Le port public du
 tailnet reste 8443, sans Funnel ni ouverture de routeur. Les essais de proxy
 utilisateur et d'ajout de `nft` au démon sont retirés : ils ne sont plus utiles.
+
+## 2026-09-30 — SNI stable entre Tailscale Serve et Caddy
+
+Le relais Tailscale vers l'adresse IP de Caddy ne fournissait pas le nom TLS
+attendu par Caddy. Le serveur résout désormais `status.home.arpa` par une
+entrée statique vers son IP LAN, puis Tailscale Serve utilise ce nom comme
+backend HTTPS. Ce choix évite une dépendance au DNS du routeur et conserve un
+certificat Caddy cohérent, tandis que le client final reçoit toujours le
+certificat Tailscale public sur le port 8443.

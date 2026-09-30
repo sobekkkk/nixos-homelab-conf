@@ -6,6 +6,12 @@
   # et utilise DERP chiffré lorsqu'un chemin direct n'est pas disponible.
   services.tailscale.enable = true;
 
+  # Le relais local Kuma utilise le nom Caddy existant : ce mapping statique
+  # évite toute dépendance au DNS du routeur et fournit le bon SNI TLS.
+  networking.extraHosts = ''
+    192.168.1.69 status.home.arpa
+  '';
+
   # L'interface ne devient pas globalement fiable : seuls SSH et les relais
   # HTTPS privés d'administration y sont acceptés.
   networking.firewall.extraInputRules = ''
@@ -30,8 +36,8 @@
     };
   };
 
-  # Caddy est l'unique point d'entrée de Kuma. Tailscale Serve conserve le
-  # nom MagicDNS en amont ; Caddy sélectionne alors son vhost Kuma privé.
+  # Caddy est l'unique point d'entrée de Kuma. Tailscale Serve le joint avec
+  # son nom local afin de présenter le bon SNI et sélectionner son vhost.
   systemd.services.tailscale-uptime-kuma-serve = {
     description = "Publish Uptime Kuma privately through Tailscale Serve";
     requires = [ "tailscaled.service" ];
@@ -40,7 +46,7 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8443 https+insecure://192.168.1.69:443";
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8443 https+insecure://status.home.arpa:443";
       ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8443 off";
     };
   };
