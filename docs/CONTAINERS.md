@@ -10,6 +10,7 @@ transformer le serveur en collection de commandes oubliées.
 | Hôte | NixOS | Docker, pare-feu, mises à jour système, journaux et sécurité. |
 | Interface | Portainer CE | Voir les conteneurs et déployer les futurs stacks Docker. |
 | Applications | Stacks Portainer | Un service précis, ses données, ses variables et sa documentation. |
+| Observabilité | Uptime Kuma + Netdata | Disponibilité des services et métriques temps réel privées. |
 
 Portainer est lui-même déclaré dans NixOS pour éviter le paradoxe d'un outil
 qui devrait se déployer lui-même. Il est le seul conteneur de départ. Tous les
@@ -66,10 +67,11 @@ contenant des données importantes ne doit donc être considéré comme protég�
 
 ## Exception de démarrage : supervision
 
-Le stack Uptime Kuma est conservé dans `stacks/uptime-kuma/` dans ce dépôt afin
-de servir d'exemple petit, lisible et sans secret. Il est déployé par Portainer
-et non par une commande Docker lancée sur l'hôte. Caddy devient l'unique entrée
-HTTPS locale, avec `portainer.home.arpa` et `status.home.arpa`. Son guide est
-dans [`SUPERVISION.md`](SUPERVISION.md). Les prochains stacks qui contiendront
-des secrets ou des données personnelles devront migrer vers leur propre dépôt
-privé.
+Uptime Kuma et Netdata sont suivis dans le dépôt GitOps privé `homelab-apps`.
+Ils sont déployés par Portainer et non par une commande Docker lancée sur
+l'hôte. Caddy devient l'unique entrée HTTPS locale, avec
+`portainer.home.arpa`, `status.home.arpa` et `netdata.home.arpa`. Netdata reçoit
+les pseudo-systèmes de l'hôte en lecture seule pour produire ses métriques, mais
+ne reçoit jamais le socket Docker. Son guide est dans
+[`SUPERVISION.md`](SUPERVISION.md). Les prochains stacks qui contiendront des
+secrets ou des données personnelles devront aussi vivre dans le dépôt privé.

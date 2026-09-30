@@ -9,8 +9,11 @@ assessment:
         - 22
         - 443
         - 9443
+        - 8443
+        - 8444
       approved_web_endpoints:
         - https://192.168.1.69:9443
+        - https://192.168.1.69:443
       ipv6: null # Add only after the owner explicitly authorises an IPv6 target.
   prohibited_targets:
     - router

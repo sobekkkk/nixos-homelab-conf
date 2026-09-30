@@ -30,10 +30,10 @@ relais vers d'autres services du réseau.
 
 Tailscale est installé directement sur l'hôte NixOS, jamais dans Docker. Il crée
 une interface virtuelle `tailscale0` sur laquelle nftables n'accepte que SSH,
-le relais HTTPS privé de Portainer (443) et celui de Kuma (8443). La politique
+le relais HTTPS privé de Portainer (443), Kuma (8443) et Netdata (8444). La politique
 du tailnet décide quels appareils peuvent atteindre ces services, tandis que
 `sshd` conserve ses contrôles de clé, de compte et de privilèges. Tailscale
-Serve termine HTTPS puis relaie Portainer et Kuma localement ; il n'utilise
+Serve termine HTTPS puis relaie Portainer, Kuma et Netdata localement ; il n'utilise
 jamais Tailscale Funnel. Aucun port n'est ouvert sur le routeur ; le serveur
 n'annonce ni route de sous-réseau ni exit node.
 Portainer et les services Docker restent limités au LAN par `docker-lan-guard`.
@@ -71,10 +71,13 @@ Le premier stack de supervision est stocké dans `stacks/uptime-kuma/`. Caddy
 expose TCP/443 sur l'adresse LAN `192.168.1.69` seulement, et garde Uptime Kuma
 sur un réseau Docker privé sans port hôte. Tailscale Serve rejoint Caddy
 localement en HTTPS, avec le nom statique `status.home.arpa`, et relaie Kuma en
-HTTPS privé sur le port 8443. Le port 443
+HTTPS privé sur le port 8443. Netdata suit le même modèle avec
+`netdata.home.arpa` sur le port 8444. Le port 443
 de l'adresse Tailscale reste réservé au relais HTTPS privé de Portainer. Caddy
-rejoint aussi Portainer via le réseau `homelab-proxy`. Le proxy émet les certificats de
-`portainer.home.arpa` et `status.home.arpa` via son autorité locale ; le poste
+rejoint aussi Portainer et Netdata via le réseau `homelab-proxy`. Netdata n'a ni
+port hôte ni socket Docker : il observe les métriques hôte, systemd et cgroups
+Docker en lecture seule. Le proxy émet les certificats de `portainer.home.arpa`,
+`status.home.arpa` et `netdata.home.arpa` via son autorité locale ; le poste
 d'administration doit lui faire confiance avant que l'accès HTTPS soit considéré
 comme entièrement vérifié. Pendant cette migration, 9443 reste disponible pour
 valider le proxy puis sera retiré.

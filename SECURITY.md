@@ -18,13 +18,13 @@ Le périmètre principal comprend :
 - l'administration locale et SSH du compte `sobek` ;
 - le pare-feu, le durcissement noyau, AppArmor, les journaux et l'audit ;
 - Docker local, sa garde réseau et Portainer CE ;
-- le proxy Caddy, Uptime Kuma et leurs volumes locaux ;
+- le proxy Caddy, Uptime Kuma, Netdata et leurs volumes locaux ;
 - les tâches de maintenance Nix et l'usage interactif de Codex CLI.
 
 La machine est administrée par une seule personne. SSH, Portainer et la
 supervision sont les seuls services réseau attendus. La supervision est
-joignable depuis le LAN IPv4 `192.168.1.0/24` et, sur son point HTTPS dédié
-8443, depuis les appareils explicitement autorisés du tailnet Tailscale de
+joignable depuis le LAN IPv4 `192.168.1.0/24` et, sur ses points HTTPS dédiés
+8443 (Kuma) et 8444 (Netdata), depuis les appareils explicitement autorisés du tailnet Tailscale de
 l'administrateur. SSH reste accessible depuis ce LAN et ce tailnet. Portainer
 conserve son port 9443 limité au LAN et peut aussi être relayé en HTTPS par
 Tailscale Serve, uniquement dans ce tailnet. Tout nouveau service, port ou
@@ -46,7 +46,7 @@ seul.
 Les principales frontières sont :
 
 1. réseau local et tailnet d'administration vers `sshd` et les relais HTTPS
-   Tailscale Serve de Portainer et Kuma, protégés par nftables, la politique
+   Tailscale Serve de Portainer, Kuma et Netdata, protégés par nftables, la politique
    d'accès Tailscale et l'authentification associée ; les applications restent
    limitées au LAN ou à la boucle locale par la garde Docker `DOCKER-USER` et
    ne sont jamais exposées par Funnel ;
@@ -59,8 +59,8 @@ Les principales frontières sont :
    compte qui les lance.
 6. Portainer vers le socket Docker local : cette frontière donne à Portainer une
    capacité d'administration Docker équivalente à `root` sur l'hôte.
-7. Caddy vers Portainer et Uptime Kuma sur des réseaux Docker privés : Kuma ne
-   doit pas être directement publié sur l'hôte.
+7. Caddy vers Portainer, Uptime Kuma et Netdata sur des réseaux Docker privés :
+   Kuma et Netdata ne doivent pas être directement publiés sur l'hôte.
 
 Le modèle détaillé et ses scénarios sont dans
 [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
@@ -77,8 +77,8 @@ Une modification ne doit pas rompre les propriétés suivantes :
   à demander son mot de passe ;
 - aucun port entrant ne doit être ouvert globalement par défaut ;
 - Tailscale ne doit pas devenir un routeur de sous-réseau, un exit node ou une
-  exposition publique ; SSH et les relais HTTPS de Portainer (443) et Kuma
-  (8443) doivent rester limités aux appareils de confiance du tailnet, sans
+  exposition publique ; SSH et les relais HTTPS de Portainer (443), Kuma
+  (8443) et Netdata (8444) doivent rester limités aux appareils de confiance du tailnet, sans
   Funnel ;
 - une nouvelle exposition réseau doit avoir une source, un port et un besoin
   explicitement documentés ;
@@ -86,9 +86,13 @@ Une modification ne doit pas rompre les propriétés suivantes :
   groupe `docker`, et la garde `DOCKER-USER` doit s'activer avant tout
   conteneur qui publie un port ;
 - Caddy peut publier TCP/443 exclusivement sur `192.168.1.69` pour
-  `portainer.home.arpa` et `status.home.arpa`; le port 443 du tailnet reste
-  réservé à Portainer Serve, Kuma utilise le port 8443 du tailnet via Tailscale
-  Serve, et les ports 80, 8000 et 9000 restent absents ;
+  `portainer.home.arpa`, `status.home.arpa` et `netdata.home.arpa`; le port 443
+  du tailnet reste réservé à Portainer Serve, Kuma utilise le port 8443 et
+  Netdata le port 8444 via Tailscale Serve, et les ports 80, 8000, 9000 et
+  19999 restent absents ;
+- Netdata peut lire les pseudo-systèmes hôte nécessaires aux métriques, mais ne
+  doit jamais recevoir le socket Docker, directement ou via un proxy qui permet
+  de lire les données, journaux ou systèmes de fichiers des conteneurs ;
 - pendant la migration seulement, Portainer peut conserver TCP/9443 vers le LAN
   afin de valider Caddy ; il doit être retiré une fois le proxy validé ;
 - Uptime Kuma doit rester sans socket Docker ni port hôte, sur son réseau privé,

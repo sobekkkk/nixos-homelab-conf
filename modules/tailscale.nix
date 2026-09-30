@@ -10,6 +10,7 @@
   # évite toute dépendance au DNS du routeur et fournit le bon SNI TLS.
   networking.extraHosts = ''
     192.168.1.69 status.home.arpa
+    192.168.1.69 netdata.home.arpa
   '';
 
   # L'interface ne devient pas globalement fiable : seuls SSH et les relais
@@ -18,6 +19,7 @@
     iifname "${config.services.tailscale.interfaceName}" tcp dport 22 accept comment "SSH from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 443 accept comment "Portainer HTTPS from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8443 accept comment "Uptime Kuma HTTPS from trusted tailnet"
+    iifname "${config.services.tailscale.interfaceName}" tcp dport 8444 accept comment "Netdata HTTPS from trusted tailnet"
   '';
 
   # Tailscale termine HTTPS avec le certificat du tailnet, puis relaie
@@ -48,6 +50,22 @@
       RemainAfterExit = true;
       ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8443 https+insecure://status.home.arpa:443";
       ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8443 off";
+    };
+  };
+
+  # Netdata reste une interface technique privée. Le nom local fournit le SNI
+  # attendu par Caddy, et le port tailnet dédié évite toute collision avec les
+  # relais Portainer (443) et Kuma (8443).
+  systemd.services.tailscale-netdata-serve = {
+    description = "Publish Netdata privately through Tailscale Serve";
+    requires = [ "tailscaled.service" ];
+    after = [ "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8444 https+insecure://netdata.home.arpa:443";
+      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8444 off";
     };
   };
 }

@@ -24,10 +24,13 @@ flowchart LR
     DGUARD --> CADDY[Caddy]
     CADDY -->|private Docker networks| PORTAINER
     CADDY --> KUMA[Uptime Kuma]
+    CADDY --> NETDATA[Netdata]
     TAILNET[Appareil Tailscale autorisé] -->|HTTPS 443| TS_PORTAINER[Tailscale Serve / Portainer]
     TAILNET -->|HTTPS 8443| TS_KUMA[Tailscale Serve / Kuma]
+    TAILNET -->|HTTPS 8444| TS_NETDATA[Tailscale Serve / Netdata]
     TS_PORTAINER --> PORTAINER
     TS_KUMA --> KUMA
+    TS_NETDATA --> NETDATA
     SSH --> USER[compte sobek]
     USER -->|mot de passe sudo| ROOT[root]
     GIT[Dépôt Git / flake] -->|eval + build| REBUILD[nixos-rebuild]
@@ -52,7 +55,7 @@ flowchart LR
 | Maintenance Nix | GC/optimisation automatiques, mises à jour manuelles | `modules/maintenance.nix:4-23` |
 | Codex CLI | Assistant interactif sans service permanent | `docs/CODEX.md:3-45` |
 | Docker, garde et Portainer | Plateforme de conteneurs limitée au LAN | `modules/containers.nix` |
-| Caddy et Uptime Kuma | HTTPS local et supervision | `stacks/uptime-kuma/`; `docs/SUPERVISION.md` |
+| Caddy, Uptime Kuma et Netdata | HTTPS local et supervision | `homelab-apps/apps/`; `docs/SUPERVISION.md` |
 
 ### Ressources et capacités effectives
 
@@ -66,7 +69,7 @@ flowchart LR
 | Assistance Codex | fichiers et commandes de `sobek` | exécution sans `sudo`; jeton éventuel dans `~/.codex/auth.json` | OpenAI/Codex vers session utilisateur | `docs/CODEX.md:23-45` |
 | Traçabilité | journaux locaux | journald 512 Mio/1 mois; auditd 10 × 50 Mio | noyau et services vers disque | `modules/auditing.nix:4-42` |
 | Plateforme de conteneurs | Docker + Portainer | API Docker Unix locale, UI HTTPS TCP/9443 limitée au LAN | `root`, Portainer et appareils LAN | `modules/containers.nix`; `docs/CONTAINERS.md` |
-| Supervision | Caddy + Uptime Kuma | HTTPS TCP/443 via Caddy au LAN; HTTPS TCP/8443 via Tailscale; Kuma non publié | LAN et tailnet autorisé, Caddy, Kuma | `stacks/uptime-kuma/`; `docs/SUPERVISION.md` |
+| Supervision | Caddy + Uptime Kuma + Netdata | HTTPS TCP/443 via Caddy au LAN; HTTPS TCP/8443 (Kuma) et 8444 (Netdata) via Tailscale; services non publiés | LAN et tailnet autorisé, Caddy, Kuma, Netdata | `homelab-apps/apps/`; `docs/SUPERVISION.md` |
 
 Le démon SSH écoute techniquement sur IPv4 et IPv6. La règle dédiée n'autorise
 que la source LAN IPv4 ; l'efficacité exacte du filtrage IPv6 doit rester un
@@ -130,6 +133,7 @@ modèle et doit être décrite comme prérequis lorsqu'elle est supposée.
 | Haute | Un attaquant atteint Portainer ou son compte administrateur et utilise le socket Docker pour contrôler l'hôte | accès LAN/Internet imprévu et compte, vulnérabilité ou session Portainer | contrôle des conteneurs, capacité root indirecte | HTTPS 9443 seulement, LAN guard, aucun groupe Docker pour `sobek`, pas d'API TCP Docker | vérifier la garde `DOCKER-USER`, mot de passe Portainer unique et absence de redirection routeur (`modules/containers.nix`, `docs/CONTAINERS.md`) |
 | Haute | Un port publié par un futur conteneur contourne le pare-feu et devient accessible hors LAN | conteneur publiant un port et règle Docker absente ou contournée | exposition d'un service ou de ses données | chaîne `HOMELAB-DOCKER-GUARD` dans `DOCKER-USER`, démarrage Portainer dépendant de cette garde | contrôler `iptables -S DOCKER-USER` après chaque changement et avant tout accès distant (`modules/containers.nix`) |
 | Haute | Un attaquant atteint Kuma hors du tailnet, intercepte une première connexion TLS ou récupère l'autorité Caddy | Kuma publié, appareil LAN hostile ou volume Caddy exposé | contrôle du compte Kuma, lecture de supervision ou usurpation TLS locale | Kuma non publié, Tailscale Serve TCP/8443 privé via Caddy, Caddy TCP/443 LAN uniquement, volumes locaux | vérifier les ports et l'ACL Tailscale, importer l'autorité seulement sur les clients LAN de confiance et sauvegarder les volumes (`stacks/uptime-kuma/`, `docs/SUPERVISION.md`) |
+| Moyenne | Une compromission Netdata lit ou modifie des données d'applications via Docker | socket Docker présent, directement ou au travers d'un proxy trop large | lecture de secrets ou contrôle indirect de l'hôte | aucun socket Docker ni proxy API pour Netdata ; métriques Docker par cgroups en lecture seule | conserver l'absence de socket dans le stack, vérifier les montages et les réseaux après chaque évolution (`homelab-apps/apps/netdata/`, `docs/SUPERVISION.md`) |
 | Basse | Les espaces de noms utilisateur exposent une vulnérabilité noyau locale | exécution locale non privilégiée et faille noyau compatible | élévation locale | AppArmor, sysctl, mises à jour manuelles | conserver l'activation justifiée et réévaluer avec les futurs conteneurs (`modules/hardening.nix:4-12`) |
 | Basse | Le GC supprime une génération attendue pour un ancien retour arrière | génération non référencée âgée de plus de 30 jours | récupération plus longue, sans gain attaquant direct | quatre entrées de boot et racines Nix actives | sauvegarder la configuration et documenter les versions importantes (`modules/boot.nix:14-18`, `modules/maintenance.nix:8-15`) |
 

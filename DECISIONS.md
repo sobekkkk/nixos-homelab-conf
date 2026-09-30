@@ -184,3 +184,19 @@ entrée statique vers son IP LAN, puis Tailscale Serve utilise ce nom comme
 backend HTTPS. Ce choix évite une dépendance au DNS du routeur et conserve un
 certificat Caddy cohérent, tandis que le client final reçoit toujours le
 certificat Tailscale public sur le port 8443.
+
+## 2026-09-30 — Netdata sans socket Docker
+
+Netdata complète Uptime Kuma : Kuma teste la disponibilité, Netdata sert à
+comprendre l'état de l'hôte, des unités systemd et des cgroups Docker en temps
+réel. Il est conteneurisé et versionné dans le dépôt GitOps privé, sans port
+hôte. Caddy le publie seulement sur le LAN et Tailscale Serve seulement aux
+appareils autorisés du tailnet, sur le port HTTPS distinct 8444.
+
+Le socket Docker n'est pas partagé avec Netdata. Une analyse des proxys de
+socket disponibles a montré qu'un accès global aux endpoints `containers`, même
+en GET-only, peut exposer journaux, processus ou systèmes de fichiers de tous
+les conteneurs. Cette visibilité n'est pas nécessaire pour les métriques de
+ressources : Netdata observe les cgroups en lecture seule, et Portainer reste
+l'inventaire et le point d'administration Docker. Ce compromis réduit fortement
+la portée d'une compromission de Netdata sans perdre la supervision utile.

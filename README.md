@@ -26,6 +26,8 @@ améliorations sont bienvenues.
 - HTTPS local avec Caddy sur le LAN : Portainer et la supervision sont servis
   sous les noms `*.home.arpa`, sans exposition Internet.
 - Uptime Kuma, isolé derrière Caddy et géré comme stack Portainer ;
+- Netdata, isolé derrière Caddy, pour les métriques détaillées du serveur,
+  systemd et des workloads Docker sans socket Docker ;
 - modèle GitOps documenté pour que les prochaines applications Docker soient
   déployées depuis une source versionnée.
 
@@ -88,6 +90,7 @@ de Git.
 - [ ] Sauvegardes automatisées vers une destination à choisir ;
 - [x] Premier service de supervision déployé sans exposition Internet ;
 - [x] HTTPS local unifié et supervision Uptime Kuma déployée ;
+- [x] Observabilité temps réel de l'hôte et des conteneurs avec Netdata ;
 - [x] Dépôt privé et GitOps par polling pour les applications Docker ;
 - [ ] Revue de sécurité de l'infrastructure avec un périmètre explicite.
 

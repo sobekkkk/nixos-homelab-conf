@@ -169,7 +169,7 @@ chaîne de démarrage et du réseau, mais elles suivent désormais une cadence
 explicite :
 
 - `sobek` consulte au moins toutes les deux semaines les avis NixOS et les
-  versions publiées de Portainer, Caddy et Uptime Kuma ;
+  versions publiées de Portainer, Caddy, Uptime Kuma et Netdata ;
 - un correctif de sécurité connu pour un service exposé au LAN est évalué sous
   sept jours ; les autres mises à jour sont regroupées dans la revue mensuelle ;
 - chaque mise à jour d'image vérifie le nouveau digest publié par l'éditeur,
@@ -184,3 +184,4 @@ Les digests actuels ont été vérifiés le 29 septembre 2026 auprès de Docker 
 | Portainer CE | `2.39.0@sha256:3267f1869e0fa87b843c55f7fd848f9e3001367d053505f4cb8c664e4a997996` |
 | Caddy | `2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b` |
 | Uptime Kuma | `2.5.5@sha256:c74379ac4509ce2d2c2633f509e67003ee2e45b6e995c5e43fc101f45a0e1fbe` |
+| Netdata | `v2.11.1@sha256:04218b2713bad4990ecd0c3dd9424bbf1a687bf72afb7b5f188c1e25e3619142` |

@@ -1,7 +1,12 @@
 # Supervision locale
 
-Uptime Kuma est le premier service applicatif du homelab. Il est géré comme un
-stack Portainer, pas comme un paquet installé sur l'hôte.
+La supervision associe deux outils complémentaires, tous deux gérés comme des
+stacks Portainer, pas comme des paquets installés sur l'hôte : Uptime Kuma pour
+la disponibilité et Netdata pour les métriques détaillées.
+
+- **Uptime Kuma** vérifie qu'une interface est joignable et répond correctement ;
+- **Netdata** montre en temps réel CPU, mémoire, disque, réseau, processus,
+  unités systemd et consommation des cgroups Docker.
 
 ## Composition et exposition
 
@@ -13,7 +18,7 @@ Le stack `stacks/uptime-kuma/compose.yaml` contient :
   par le réseau Docker privé `uptime-kuma-net` et Portainer par
   `homelab-proxy`.
 
-Kuma n'a aucun port hôte. Caddy publie TCP/443 uniquement sur `192.168.1.69`,
+Kuma et Netdata n'ont aucun port hôte. Caddy publie TCP/443 uniquement sur `192.168.1.69`,
 et la garde Docker le limite au LAN. Tailscale Serve rejoint ce proxy et relaie
 Kuma vers le port HTTPS 8443 uniquement aux appareils autorisés du tailnet ;
 le port 443 Tailscale reste réservé à Portainer. Les ports 80, UDP/443, 3001,
@@ -53,12 +58,14 @@ L'interface sera disponible à :
 https://portainer.home.arpa
 https://status.home.arpa
 https://homelab.tail239aaa.ts.net:8443
+https://netdata.home.arpa
+https://homelab.tail239aaa.ts.net:8444
 ```
 
-Les deux noms `*.home.arpa` doivent d'abord résoudre vers `192.168.1.69` sur le
+Les noms `*.home.arpa` doivent d'abord résoudre vers `192.168.1.69` sur le
 PC d'administration. Leur certificat est émis par l'autorité locale Caddy.
-L'URL Tailscale de Kuma est disponible hors du LAN depuis les appareils autorisés
-du tailnet et utilise le certificat public Tailscale. Vérifier l'adresse locale
+Les URL Tailscale de Kuma et Netdata sont disponibles hors du LAN depuis les appareils autorisés
+du tailnet et utilisent le certificat public Tailscale. Vérifier l'adresse locale
 exacte avant toute exception navigateur ; l'import de l'autorité Caddy sur les
 postes de confiance est le prochain raffinement.
 
@@ -79,6 +86,16 @@ ICMP/ping dans cette première version.
 
 Notifications externes, webhooks et tokens seront ajoutés seulement lorsque
 leur destination et leur stockage hors Git auront été décidés.
+
+## Netdata et la frontière Docker
+
+Netdata est suivi dans le dépôt privé `homelab-apps`, chemin
+`apps/netdata/compose.yaml`. Il se joint seulement au réseau Docker partagé
+avec Caddy, qui est son unique proxy. Pour protéger les données des applications,
+Netdata ne reçoit jamais le socket Docker : un proxy « lecture seule » générique
+pourrait encore rendre accessibles des journaux ou fichiers de conteneurs via
+des endpoints GET. Les cgroups suffisent à suivre leur CPU, mémoire et I/O ;
+Portainer reste l'inventaire exact des conteneurs.
 
 ## Mise à jour et retrait
 
