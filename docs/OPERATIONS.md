@@ -141,6 +141,20 @@ l'interface physique ; ne pas la retirer pour "faire marcher" un service. Les
 seuls retours autorisés concernent la boucle locale et les bridges Docker, pour
 préserver les flux internes.
 
+Depuis un appareil d'administration Tailscale autorisé, l'accès distant privé
+utilise le certificat HTTPS géré par Tailscale :
+
+```text
+https://homelab.tail239aaa.ts.net
+```
+
+Ce relais est intentionnellement réservé au tailnet : ne pas remplacer
+`tailscale serve` par Tailscale Funnel. Vérifier son état avec :
+
+```bash
+tailscale serve status
+```
+
 Ne pas activer les ports 80, 443, 8000 ou 9000 par défaut. Un premier service
 doit avoir un compose/stack versionné dans un dépôt privé, ses données et sa
 sauvegarde documentées, puis être déployé depuis Portainer. La mise à jour de

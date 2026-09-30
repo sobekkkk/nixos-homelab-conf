@@ -22,12 +22,13 @@ Le périmètre principal comprend :
 - les tâches de maintenance Nix et l'usage interactif de Codex CLI.
 
 La machine est administrée par une seule personne. SSH, Portainer et la
-supervision sont les seuls services réseau attendus. Portainer et la supervision
-restent joignables uniquement depuis le LAN IPv4 `192.168.1.0/24`. SSH reste
-accessible depuis ce LAN et devient aussi joignable depuis les appareils
-explicitement autorisés du tailnet Tailscale de l'administrateur. Tout nouveau
-service, port ou compte élargit le périmètre et doit être documenté avant son
-activation.
+supervision sont les seuls services réseau attendus. La supervision reste
+joignable uniquement depuis le LAN IPv4 `192.168.1.0/24`. SSH reste accessible
+depuis ce LAN et devient aussi joignable depuis les appareils explicitement
+autorisés du tailnet Tailscale de l'administrateur. Portainer conserve son port
+9443 limité au LAN et peut aussi être relayé en HTTPS par Tailscale Serve,
+uniquement dans ce tailnet. Tout nouveau service, port ou compte élargit le
+périmètre et doit être documenté avant son activation.
 
 ## Modèle de menaces et frontières de confiance
 
@@ -44,9 +45,10 @@ seul.
 
 Les principales frontières sont :
 
-1. réseau local et tailnet d'administration vers `sshd`, protégé par nftables,
-   la politique d'accès Tailscale et l'authentification SSH ; Portainer reste
-   limité au LAN par la garde Docker `DOCKER-USER` ;
+1. réseau local et tailnet d'administration vers `sshd` et le relais HTTPS
+   Tailscale Serve de Portainer, protégés par nftables, la politique d'accès
+   Tailscale et l'authentification associée ; Portainer reste limité au LAN par
+   la garde Docker `DOCKER-USER` et n'est jamais exposé par Funnel ;
 2. compte `sobek` vers `root`, protégé par PAM et un mot de passe `sudo` ;
 3. configuration Git vers système actif, via évaluation, build et
    `nixos-rebuild` privilégié ;
@@ -74,8 +76,8 @@ Une modification ne doit pas rompre les propriétés suivantes :
   à demander son mot de passe ;
 - aucun port entrant ne doit être ouvert globalement par défaut ;
 - Tailscale ne doit pas devenir un routeur de sous-réseau, un exit node ou une
-  exposition publique ; ses règles doivent limiter l'administration distante au
-  seul compte et aux seuls appareils de confiance de l'administrateur ;
+  exposition publique ; SSH et le relais HTTPS de Portainer doivent rester
+  limités aux appareils de confiance du tailnet, sans Funnel ;
 - une nouvelle exposition réseau doit avoir une source, un port et un besoin
   explicitement documentés ;
 - Docker ne doit pas écouter une API TCP, `sobek` ne doit pas rejoindre le

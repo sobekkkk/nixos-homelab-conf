@@ -77,3 +77,18 @@ au tailnet.
 Le serveur ne sera ni routeur de sous-réseau, ni exit node, ni point de
 publication Tailscale Funnel. L'autorisation des appareils distants reste dans
 la politique du tailnet, puis SSH exige toujours la clé du compte `sobek`.
+
+## 2026-09-30 — Portainer privé via Tailscale Serve
+
+Le port 9443 de Portainer reste limité au LAN par la garde Docker. Pour
+l'administration hors domicile, Tailscale Serve termine HTTPS sur
+`homelab.tail239aaa.ts.net` et relaie exclusivement vers `127.0.0.1:9443`.
+Cette exposition est réservée aux appareils autorisés du tailnet et n'utilise
+pas Tailscale Funnel : aucun port n'est ajouté au routeur et aucun service
+applicatif ou de supervision ne rejoint le tailnet.
+
+Le relais fait confiance au certificat auto-signé seulement sur la boucle
+locale, entre `tailscaled` et Portainer. Le navigateur reçoit le certificat
+public du nom Tailscale. Le compte Portainer reste une capacité d'administration
+Docker équivalente à `root` : seuls les appareils personnels et de confiance
+doivent être autorisés par la politique Tailscale.

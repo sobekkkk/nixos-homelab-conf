@@ -29,11 +29,13 @@ l'administration interactive et aux transferts de fichiers, sans devenir un
 relais vers d'autres services du réseau.
 
 Tailscale est installé directement sur l'hôte NixOS, jamais dans Docker. Il crée
-une interface virtuelle `tailscale0` sur laquelle nftables n'accepte que SSH.
-La politique du tailnet décide quels appareils peuvent atteindre ce service,
-tandis que `sshd` conserve ses contrôles de clé, de compte et de privilèges.
-Aucun port n'est ouvert sur le routeur ; le serveur n'annonce ni route de
-sous-réseau ni exit node.
+une interface virtuelle `tailscale0` sur laquelle nftables n'accepte que SSH et
+le relais HTTPS privé de Portainer. La politique du tailnet décide quels
+appareils peuvent atteindre ces services, tandis que `sshd` conserve ses
+contrôles de clé, de compte et de privilèges. Tailscale Serve termine HTTPS puis
+relaie Portainer localement ; il n'utilise jamais Tailscale Funnel. Aucun port
+n'est ouvert sur le routeur ; le serveur n'annonce ni route de sous-réseau ni
+exit node.
 Portainer et les services Docker restent limités au LAN par `docker-lan-guard`.
 
 Docker publie ses ports après traduction NAT ; ces ports ne passent donc pas
@@ -52,7 +54,9 @@ Le moteur Docker est une brique de l'hôte NixOS ; il ne possède pas d'API TCP.
 déclarative par NixOS : il sert de point de départ pour gérer les futurs stacks.
 
 Son interface HTTPS est disponible sur `https://192.168.1.69:9443` depuis le
-LAN. Le certificat initial est auto-signé. Les ports 8000 (Edge) et 9000 (HTTP
+LAN. Le certificat initial est auto-signé. Depuis un appareil Tailscale autorisé,
+elle est aussi disponible avec un certificat Tailscale sur
+`https://homelab.tail239aaa.ts.net`. Les ports 8000 (Edge) et 9000 (HTTP
 historique) ne sont pas publiés. Les données de Portainer vivent dans le volume
 Docker nommé `portainer_data`; elles ne sont pas encore couvertes par une
 sauvegarde automatisée.
