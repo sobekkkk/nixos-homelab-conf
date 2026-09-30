@@ -64,7 +64,7 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8444 https+insecure://192.168.1.69:8444";
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8444 https+insecure://netdata.home.arpa:8444";
       ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8444 off";
     };
   };

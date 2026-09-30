@@ -210,3 +210,9 @@ listener TCP/8444 distinct, lié uniquement à l'adresse LAN. Tailscale Serve le
 rejoint localement pour Netdata ; Kuma garde son relais vers le vhost HTTPS
 `status.home.arpa` sur 8443. Netdata reste sans port direct : seul Caddy est
 publié, et `docker-lan-guard` limite le listener intermédiaire au LAN.
+
+Le relais Tailscale utilise néanmoins le nom `netdata.home.arpa:8444`, et non
+l'adresse IP du listener : Caddy doit recevoir un SNI qui correspond à un
+certificat interne. Ce nom est résolu localement de façon statique vers
+`192.168.1.69`; les clients ne le voient jamais, car Tailscale termine leur TLS
+avec le certificat public du tailnet.
