@@ -14,7 +14,9 @@ transformer le serveur en collection de commandes oubliées.
 Portainer est lui-même déclaré dans NixOS pour éviter le paradoxe d'un outil
 qui devrait se déployer lui-même. Il est le seul conteneur de départ. Tous les
 autres services passeront par une stack Portainer, idéalement suivie dans un
-dépôt Git privé séparé de la configuration NixOS.
+dépôt Git privé séparé de la configuration NixOS. Le modèle de déploiement est
+décrit dans [`GITOPS.md`](GITOPS.md) : Portainer lira les stacks depuis Git et
+les appliquera automatiquement par polling, sans rendre le serveur public.
 
 ## Accès initial
 

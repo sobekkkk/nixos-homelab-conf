@@ -119,3 +119,12 @@ déploiement a utilisé l'éditeur Web de Portainer à partir du commit `664f24a
 ce compromis est temporaire car le dépôt actuel est public. Les futurs stacks
 avec données ou secrets seront placés dans un dépôt privé et déployés en mode
 Git afin de supprimer le risque de dérive entre Portainer et la source revue.
+
+## 2026-09-30 — GitOps applicatif sans webhook public
+
+L'hôte reste déclaré dans NixOS, tandis que les futurs stacks Compose vivront
+dans un dépôt Git privé dédié. Portainer utilisera GitOps en polling plutôt
+qu'un webhook : le serveur reste non publié sur Internet et chaque mise à jour
+applicative part d'un commit relu. Les identifiants Git, lorsqu'ils seront
+nécessaires, auront seulement un droit de lecture sur ce dépôt et resteront
+dans Portainer, jamais dans la configuration NixOS ou dans Git.

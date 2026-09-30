@@ -23,8 +23,11 @@ améliorations sont bienvenues.
 - Docker local, avec Portainer CE comme interface unique des conteneurs ;
 - Portainer disponible uniquement en HTTPS sur le LAN, avec une garde dédiée
   contre le contournement du pare-feu par les ports Docker publiés.
-- HTTPS local unifié en préparation : Caddy servira Portainer et la supervision
+- HTTPS local avec Caddy sur le LAN : Portainer et la supervision sont servis
   sous les noms `*.home.arpa`, sans exposition Internet.
+- Uptime Kuma, isolé derrière Caddy et géré comme stack Portainer ;
+- modèle GitOps documenté pour que les prochaines applications Docker soient
+  déployées depuis une source versionnée.
 
 ## Organisation
 
@@ -43,6 +46,8 @@ configuration et les précautions propres à l'agent sont décrites dans
 [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md). Les règles simples pour les
 conteneurs sont dans [docs/CONTAINERS.md](docs/CONTAINERS.md). La supervision
 locale est expliquée dans [docs/SUPERVISION.md](docs/SUPERVISION.md).
+Le chemin prévu pour les applications Docker est décrit dans
+[docs/GITOPS.md](docs/GITOPS.md).
 
 ## Appliquer une modification
 
@@ -81,8 +86,9 @@ de Git.
 - [x] Politique de sécurité et modèle de menaces documentés ;
 - [x] Base Docker et Portainer CE restreints au LAN ;
 - [ ] Sauvegardes automatisées vers une destination à choisir ;
-- [ ] Premier service applicatif, avec données et sauvegarde définies ;
-- [ ] HTTPS local unifié et supervision Uptime Kuma à déployer ;
+- [x] Premier service de supervision déployé sans exposition Internet ;
+- [x] HTTPS local unifié et supervision Uptime Kuma déployée ;
+- [ ] Dépôt privé et GitOps pour les applications Docker ;
 - [ ] Revue de sécurité de l'infrastructure avec un périmètre explicite.
 
 ## Participer ou proposer une idée
