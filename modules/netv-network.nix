@@ -35,8 +35,6 @@ let n = import ../lib/netv-network.nix; in
   };
   boot.kernel.sysctl = {
     "net.ipv4.ip_forward" = 1;
-    "net.ipv4.conf.all.send_redirects" = 0;
-    "net.ipv4.conf.default.send_redirects" = 0;
   };
   systemd.services.netv-private-network = {
     description = "Private TAP links and fail-closed NetV policy routing";
