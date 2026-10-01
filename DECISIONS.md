@@ -303,6 +303,13 @@ revendiqués. Guide clients sans verrouillage MDM : une connexion Tailscale
 seule ne force pas l'exit node. Sauvegardes et états externes restent distincts.
 # 2026-10-01 — NetV : liens TAP et sortie applicative isolée (préparé)
 
+Recette coupe-circuit explicitement autorisée : sonde exécutée par le propriétaire
+dans NetV (pas de privilège Docker accordé à l'agent), IP cible résolue avant
+la coupure pour distinguer blocage TCP et panne DNS. Arrêt WireGuard dans la VM
+seulement, avec restauration systemd armée avant l'arrêt. Résultat attendu
+observé, tunnel et DNS rétablis. Ne pas généraliser cette preuve à tous les
+protocoles, à un reboot ou à une panne VM complète ; média/GPU encore à tester.
+
 Suite à la demande explicite du propriétaire : publier sur main dans les deux
 dépôts, pour conserver les références GitOps des stacks existants. Les réseaux
 ont déjà été activés en test et la sortie/DNS de la VM validés avant publication.

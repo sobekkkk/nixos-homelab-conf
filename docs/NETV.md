@@ -1,7 +1,7 @@
 # NetV : lecture privée, sortie Mullvad obligatoire
 
-Statut : **infrastructure activée en mode test ; stack NetV et lecture IPTV
-pas encore validées**.
+Statut : **infrastructure activée en mode test ; stack NetV déployée, accès HTTPS
+et test TCP de coupure WireGuard validés ; lecture IPTV et persistance à valider**.
 Le compte IPTV et le compte administrateur NetV sont saisis par le propriétaire
 dans l'interface HTTPS, jamais dans Git ou dans une conversation.
 
@@ -19,6 +19,21 @@ les adresses attendues ; WireGuard, Tailscale et AdGuard sont actifs. L'API
 Mullvad confirme une sortie Zurich `138.199.6.212`, et une résolution via AdGuard
 localhost réussit. Ces tests ne prouvent pas encore la sortie du conteneur NetV
 ou son coupe-circuit. Aucune persistance de la nouvelle génération n'est attestée.
+
+Recette applicative du 2026-10-01 après déploiement Portainer : page de connexion
+HTTPS 200 via Tailscale ; vhost LAN et backend dédié redirigent vers `/login`.
+La sortie depuis le conteneur NetV confirme Mullvad (`138.199.6.212`). Le
+propriétaire a exécuté dans ce conteneur une boucle de connexions HTTPS neuves,
+avec IP résolue avant la coupure et SNI/certificat conservés : le test ne dépend
+donc pas seulement d'un échec DNS. WireGuard arrêté dans la VM après programmation
+d'une restauration automatique à 30 secondes : séquence observée
+`MULLVAD → BLOQUE → MULLVAD`, sans résultat de sortie non-Mullvad. L'agent a
+confirmé le tunnel actif, la restauration systemd réussie, le DNS et HTTPS NetV
+200 après rétablissement. La sonde a ensuite été arrêtée par le propriétaire.
+
+Couverture limitée : une cible publique en TCP/IPv4 et une coupure WireGuard.
+Pas de preuve de coupure VM complète, reboot hôte, tous protocoles/destinations,
+lecture média ou accélération GPU. Ces tests ne sont pas un pentest.
 
 ```mermaid
 flowchart LR

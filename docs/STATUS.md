@@ -18,6 +18,12 @@ Suite à l'activation test par le propriétaire : génération active
 observées ; sortie Mullvad et DNS AdGuard de la VM confirmés par SSH. La stack
 NetV, les tests de coupure applicatifs et la persistance restent à valider.
 
+Recette complémentaire NetV : déploiement Portainer réalisé par le propriétaire,
+accès HTTPS LAN/Tailscale validé ; sortie Mullvad depuis le conteneur confirmée.
+Test de connexions neuves TCP/IPv4 avec IP fixée, WireGuard interrompu 30 secondes
+et restauré automatiquement : `MULLVAD → BLOQUE → MULLVAD`. Persistance, reboot,
+panne VM complète et lecture réelle restent non attestés ; détails dans NETV.md.
+
 Ajout runtime du 2026-10-01 : [recette passerelle](PRIVACY_GATEWAY_VALIDATION.md).
 Base hôte avant chantier : 96c7f9a. Génération active testée :
 `dw1g960133js7dar8lck17irv13nvxnj`. Après switch propriétaire, la génération
