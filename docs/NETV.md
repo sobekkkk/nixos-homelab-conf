@@ -33,6 +33,9 @@ La CSP bloque un mode direct mal configuré ; elle ne le convertit pas en relais
 
 Deux TAP persistants, appartenant à l'utilisateur système de la VM, remplacent
 SLiRP : `pgw-uplink` et `pgw-netv`. Interfaces invitées identifiées par MAC.
+Le MSS TCP IPv4 de NetV est borné à 1380 dans la VM pour le lien WireGuard 1420 ;
+les valeurs plus petites sont conservées. Les règles exit node existantes ne
+sont pas modifiées par ce clamp ciblé.
 La règle IPv4 4900/table 203 ne concerne que 172.30.240.10. La route par défaut
 de l'hôte et les réseaux des autres applications ne changent pas.
 

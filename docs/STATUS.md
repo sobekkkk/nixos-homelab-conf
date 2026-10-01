@@ -7,6 +7,12 @@ pentest ni une collecte privilégiée du serveur.
 
 ## 1. État des briques
 
+Chantier NetV du 2026-10-01 : configurations hôte, VM, application et proxy
+préparées sur `codex/netv`. Les trois Compose passent la validation de modèle.
+La construction NixOS hôte/invité a réussi ; aucune activation NetV, recette
+de coupure, mesure de débit ou lecture IPTV n'est encore attestée. Voir
+[le runbook](NETV.md). La génération en production n'est pas remplacée.
+
 Ajout runtime du 2026-10-01 : [recette passerelle](PRIVACY_GATEWAY_VALIDATION.md).
 Base hôte avant chantier : 96c7f9a. Génération active testée :
 `dw1g960133js7dar8lck17irv13nvxnj`. Après switch propriétaire, la génération

@@ -31,6 +31,9 @@ Le code déclaré prévaut sur une description devenue obsolète.
 
 ## Maintenir le dossier
 
+La [stack NetV](NETV.md) décrit le réseau applicatif isolé, la sortie Mullvad
+réutilisée, les accès privés et la recette préalable à toute persistance.
+
 Le [portail Homepage](HOMEPAGE.md) est préparé sur branches de revue ; son
 activation et ses accès doivent encore être validés par la recette dédiée.
 

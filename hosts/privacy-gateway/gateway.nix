@@ -150,6 +150,13 @@ in
           iifname "tailscale0" oifname "${interface}" masquerade
           iifname "apps0" oifname "${interface}" ip saddr ${n.app} masquerade
         }
+        chain netv_mss {
+          type filter hook forward priority mangle; policy accept;
+          # IPv4-only NetV path: avoid advertising a 1500-byte bridge MSS
+          # across the 1420-byte WireGuard link. Never raise a smaller MSS.
+          iifname "apps0" oifname "${interface}" ip saddr ${n.app} tcp flags & (syn | rst) == syn tcp option maxseg size > 1380 tcp option maxseg size set 1380
+          iifname "${interface}" oifname "apps0" ip daddr ${n.app} tcp flags & (syn | rst) == syn tcp option maxseg size > 1380 tcp option maxseg size set 1380
+        }
       '';
     };
     boot.kernel.sysctl = {
