@@ -13,6 +13,11 @@ La construction NixOS hôte/invité a réussi ; aucune activation NetV, recette
 de coupure, mesure de débit ou lecture IPTV n'est encore attestée. Voir
 [le runbook](NETV.md). La génération en production n'est pas remplacée.
 
+Suite à l'activation test par le propriétaire : génération active
+`jf346kvz0lfc0x2wy4rvaq0w7kcxd5d3`, interfaces TAP invitées et route source hôte
+observées ; sortie Mullvad et DNS AdGuard de la VM confirmés par SSH. La stack
+NetV, les tests de coupure applicatifs et la persistance restent à valider.
+
 Ajout runtime du 2026-10-01 : [recette passerelle](PRIVACY_GATEWAY_VALIDATION.md).
 Base hôte avant chantier : 96c7f9a. Génération active testée :
 `dw1g960133js7dar8lck17irv13nvxnj`. Après switch propriétaire, la génération

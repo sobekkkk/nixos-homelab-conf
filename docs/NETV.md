@@ -1,6 +1,7 @@
 # NetV : lecture privée, sortie Mullvad obligatoire
 
-Statut : **préparé sur branche, pas encore activé ni testé en lecture IPTV**.
+Statut : **infrastructure activée en mode test ; stack NetV et lecture IPTV
+pas encore validées**.
 Le compte IPTV et le compte administrateur NetV sont saisis par le propriétaire
 dans l'interface HTTPS, jamais dans Git ou dans une conversation.
 
@@ -10,8 +11,14 @@ trois modèles Compose validés, Caddy 2.11.4 adapté sans erreur. Les deux
 rulesets générés passent `nft --check` dans la VM existante, **sans application**.
 Les fichiers networkd/link générés portent les MAC, adresses et noms attendus.
 Ces vérifications ne prouvent ni forwarding effectif ni accélération matérielle.
-L'hôte tourne toujours sur `g86n36zkfyd0g253f8aybkc93p0war8q` ; son sudo exige
-le mot de passe du propriétaire.
+Après exécution du script par le propriétaire, l'hôte tourne en mode test sur
+`jf346kvz0lfc0x2wy4rvaq0w7kcxd5d3`. Contrôles SSH : services Docker, réseau
+privé, VM et relais bootstrap actifs ; règle source 4900/table 203 correcte ;
+route hôte inchangée via le Wi-Fi. Dans la VM : `uplink0` et `apps0` possèdent
+les adresses attendues ; WireGuard, Tailscale et AdGuard sont actifs. L'API
+Mullvad confirme une sortie Zurich `138.199.6.212`, et une résolution via AdGuard
+localhost réussit. Ces tests ne prouvent pas encore la sortie du conteneur NetV
+ou son coupe-circuit. Aucune persistance de la nouvelle génération n'est attestée.
 
 ```mermaid
 flowchart LR
