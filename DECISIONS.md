@@ -231,3 +231,73 @@ l'adresse IP du listener : Caddy doit recevoir un SNI qui correspond à un
 certificat interne. Ce nom est résolu localement de façon statique vers
 `192.168.1.69`; les clients ne le voient jamais, car Tailscale termine leur TLS
 avec le certificat public du tailnet.
+
+## 2026-10-01 — Passerelle privée dans une VM NixOS dédiée
+
+Séparer le routage Tailscale/Mullvad/AdGuard des applications Docker et du
+réseau administratif de l'hôte. QEMU tourne sous un compte sans sudo ni socket
+Docker ; réseau utilisateur, SSH bootstrap uniquement sur loopback 2222.
+Une exception PermitOpen limitée à ce port remplace l'interdiction globale
+des tunnels uniquement pour ce besoin de bootstrap. L'accès LAN/Tailscale
+actuel du serveur doit rester indépendant de la sortie VPN.
+
+Les sources de la VM résident dans `hosts/privacy-gateway`, celles du
+superviseur dans `modules/privacy-gateway-vm.nix`. La flake construit directement
+l'invité avec son nixpkgs verrouillé : pas de pointeur externe vers un ancien
+artefact du store, ni d'évaluation impure nécessaire au déploiement.
+
+La clé privée est saisie par le propriétaire hors chat, fichier hôte root:root
+0600, puis LoadCredential et partage invité en lecture seule. Aucun secret
+dans Git, le Nix store ou les logs. Le compte invité à clé gateway-admin a
+sudo sans mot de passe dans l'invité uniquement ; pas de délégation sudo hôte.
+
+Les configurations invité/hôte compilent. La première activation reste un
+`test`, avec backup, avant recette IPv4/IPv6/DNS/kill switch et persistance.
+Les règles client Android/TV non gérés ne sont pas un verrouillage obligatoire
+de la sortie. Déploiement et tests runtime non encore réalisés ; voir
+`docs/PRIVACY_GATEWAY.md`. Le propriétaire accepte les commandes sudo manuelles.
+
+La première recette a identifié un montage masqué par qemu-vm, un enregistrement
+du store read-only impossible, et un conflit de priorités wg-quick/Tailscale.
+Choix correctifs : mount unit explicite, Nix désactivé dans l'appliance immuable,
+table/priorités de routage explicites. Les tests runtime invités et SSH/DNS
+Tailscale passent après corrections transitoires ; le redémarrage autonome et
+le test exit node client restent à valider avant persistance.
+
+Le deuxième test a révélé que NixOS encapsule postUp dans un script : `%i`
+n'y est pas interpolé par wg-quick. Employer le nom d'interface explicite
+pour le fwmark, sans changer les exceptions du pare-feu. Correctif runtime
+validé IPv4/IPv6/DNS ; nouvelle activation requise pour prouver sa persistance.
+L'approbation Tailscale de l'exit node est maintenant vérifiée depuis Windows
+et l'invité (routes par défaut IPv4/IPv6 autorisées).
+
+Le premier essai exit node Windows a confirmé le routage HTTPS mais révélé
+un défaut DNS : avec resolved et resolvconf désactivés, networking.nameservers
+ne créait pas /etc/resolv.conf. Déclarer explicitement ce fichier vers
+127.0.0.1 (AdGuard uniquement), car le proxy DNS exit node Tailscale le lit.
+Aucun résolveur de secours externe n'est ajouté. La correction runtime rend
+la résolution Windows et l'API Mullvad fonctionnelles via l'exit node.
+
+## Débit de la passerelle : conserver la sortie stricte, corriger la MTU
+
+La MTU initiale 1280 de Mullvad fragmentait le transport chiffré Tailscale
+(dont l'interface interne est elle-même à 1280). Un téléchargement client
+de 2 Mo à MTU 1280 plafonnait à 72 136 octets/s et échouait au timeout,
+avec 3 864 fragments IPv4 supplémentaires. Passer seulement wg-mullvad à
+1420 a supprimé la croissance de ce compteur pendant les nouveaux tests.
+L'uplink invité reste à 1500 et tailscale0 à 1280. Choix : aucun bypass du
+transport Tailscale vers l'uplink, aucun DNS de secours, aucun assouplissement
+du kill switch. MSS non modifiée faute de preuve qu'une correction soit requise.
+
+Mesures client de 8 Mo : 10,79 Mbit/s IPv4 et 13,62 Mbit/s IPv6. Ce sont des
+mesures ponctuelles HTTP, pas une garantie de débit IPTV ou de capacité maximale.
+Test VPN coupé depuis Windows : HTTPS avec adresses forcées en IPv4 et IPv6
+expire sans succès, puis le tunnel rétabli confirme Mullvad exit IP true.
+La nouvelle configuration compile ; prochaine activation test requise avant
+persistance. Aucun contournement universel des filtrages FAI/plateformes promis.
+
+Après activation test et switch propriétaire, les générations active et
+persistée sont identiques (dw1g960133js7dar8lck17irv13nvxnj), services hôte
+actifs et sortie Mullvad confirmée. Pas de reboot hôte ni de validation TV
+revendiqués. Guide clients sans verrouillage MDM : une connexion Tailscale
+seule ne force pas l'exit node. Sauvegardes et états externes restent distincts.

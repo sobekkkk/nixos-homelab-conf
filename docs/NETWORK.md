@@ -96,6 +96,16 @@ d'un contrôle d'origine distinct déclaré. Voir [STATUS.md](STATUS.md).
 
 ## 7. Contrôles
 
+Exception explicitement ajoutée au 2026-10-01 : exit node `privacy-gateway`,
+100.116.220.6, VM séparée. Il sert la sortie Internet de clients volontaires,
+pas la réparation d'une URL d'administration. DNS privé TCP/UDP 53 et SSH
+TCP 22 sur tailscale0 ; AdGuard UI loopback 3000 ; bootstrap SSH hôte loopback
+2222 vers invité 22. Aucun port LAN/public n'est ajouté pour cette VM.
+Le transit Tailscale vers Internet est NATé exclusivement sur wg-mullvad ;
+le transit vers réseaux privés est refusé. Exceptions uplink invité : DHCP,
+endpoint Mullvad UDP/51820 et réponse SSH bootstrap vers 10.0.2.2 uniquement.
+La politique Tailscale externe demeure une source de vérité hors Git.
+
 Tester chaque point depuis LAN puis tailnet autorisé. Les refus depuis une
 autre origine exigent une cible de test explicitement autorisée. Pas de Funnel,
 route annoncée, exit node ou redirection routeur à ajouter pour réparer un accès.

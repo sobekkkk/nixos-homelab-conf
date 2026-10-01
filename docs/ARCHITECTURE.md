@@ -2,6 +2,12 @@
 
 ## 1. Objectifs et non-objectifs
 
+Extension au 2026-10-01 : une VM réseau dédiée fournit la sortie privée des
+clients qui sélectionnent son exit node. Elle n'est pas un conteneur Portainer.
+Voir [architecture et exploitation de la passerelle](PRIVACY_GATEWAY.md),
+[guide clients](PRIVACY_GATEWAY_CLIENTS.md) et [preuves](PRIVACY_GATEWAY_VALIDATION.md).
+Les accès administratifs LAN/Tailscale de l'hôte restent indépendants.
+
 Héberger des services personnels, administrer en LAN et hors domicile via
 Tailscale, reconstruire la configuration depuis Git. Priorités : lisibilité,
 maîtrise des accès, traçabilité et récupération. Propriétaire/opérateur : sobek.

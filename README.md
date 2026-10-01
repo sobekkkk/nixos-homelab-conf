@@ -26,6 +26,10 @@ flowchart LR
     Docker --> N[Netdata · ressources]
     K --> Discord[Discord · notifications sortantes]
     N --> Discord
+    Host --> VM[VM privee · Tailscale + AdGuard]
+    Devices[Appareils avec exit node selectionne] --> VM
+    VM --> VPN[Mullvad WireGuard]
+    VPN --> Internet[Internet]
 ```
 
 Vue logique ; les chemins réseau exacts sont dans [NETWORK.md](docs/NETWORK.md).
@@ -45,6 +49,7 @@ Vue logique ; les chemins réseau exacts sont dans [NETWORK.md](docs/NETWORK.md)
 | Recréer la plateforme et inventorier son état | [Amorçage](docs/BOOTSTRAP.md), [données](docs/DATA.md) |
 | Examiner les frontières de confiance | [Politique](SECURITY.md), [menaces](docs/THREAT_MODEL.md) |
 | Retrouver les choix et preuves historiques | [Décisions](DECISIONS.md), [rapports](security/reports/README.md) |
+| Utiliser la sortie privée et configurer ses appareils | [Passerelle](docs/PRIVACY_GATEWAY.md), [clients](docs/PRIVACY_GATEWAY_CLIENTS.md), [recette](docs/PRIVACY_GATEWAY_VALIDATION.md) |
 
 L'[index](docs/README.md) précise l'ordre de lecture et la convention de preuve.
 
@@ -75,7 +80,8 @@ du chantier actuel. Ce dossier n'en revendique ni configuration ni test.
 ## Principes
 
 - Administration uniquement LAN/Tailscale ; pas de Funnel.
-- SSH par clé ; pas de login root distant ni de forwarding SSH.
+- SSH par clé ; pas de login root distant. Seule exception de forwarding :
+  `sobek` vers `127.0.0.1:2222`, bootstrap de la VM dédiée.
 - Pas de groupe Docker pour `sobek` ; Portainer est privilégié.
 - Aucun secret dans Git, un ticket, une capture ou une commande partagée.
 - Documentation et contrôles mis à jour avant chaque commit fonctionnel.
@@ -83,3 +89,13 @@ du chantier actuel. Ce dossier n'en revendique ni configuration ni test.
 
 [Contribuer](CONTRIBUTING.md) · [Consignes agents](AGENTS.md) ·
 [Usage Codex existant](docs/CODEX.md).
+
+## Ajout du 1er octobre 2026 : passerelle privée
+
+VM NixOS dédiée, Tailscale exit node approuvé, AdGuard et Mullvad WireGuard.
+IPv4/IPv6, DNS, démarrage automatique et coupure VPN côté Windows testés.
+Correction MTU 1420 : téléchargements ponctuels à 10,8–13,6 Mbit/s, sans
+garantie de capacité maximale. Le `switch` propriétaire est vérifié : générations
+active et persistée identiques. Migration Android TV et politique obligatoire
+client restent à faire ; reboot complet de l'hôte non testé dans cette recette.
+Ni anonymat absolu, ni contournement universel, ni restauration complète par Git.

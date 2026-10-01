@@ -26,6 +26,8 @@ Le code déclaré prévaut sur une description devenue obsolète.
 4. [Amorçage](BOOTSTRAP.md), [données et secrets](DATA.md).
 5. [Politique de sécurité](../SECURITY.md), [menaces](THREAT_MODEL.md),
    [rapports](../security/reports/README.md), [décisions](../DECISIONS.md).
+6. [Passerelle privée](PRIVACY_GATEWAY.md), [clients Windows/Android/TV](PRIVACY_GATEWAY_CLIENTS.md),
+   [validation et mesures](PRIVACY_GATEWAY_VALIDATION.md).
 
 ## Maintenir le dossier
 

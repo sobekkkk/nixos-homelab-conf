@@ -7,6 +7,14 @@ pentest ni une collecte privilégiée du serveur.
 
 ## 1. État des briques
 
+Ajout runtime du 2026-10-01 : [recette passerelle](PRIVACY_GATEWAY_VALIDATION.md).
+Base hôte avant chantier : 96c7f9a. Génération active testée :
+`dw1g960133js7dar8lck17irv13nvxnj`. Après switch propriétaire, la génération
+persistée est identique (contrôle SSH du 2026-10-01). Reboot hôte non testé.
+Tailscale exit approuvé, DNS AdGuard, IPv4/IPv6 Mullvad, boot VM et tests TCP
+VPN-down depuis Windows vérifiés. Android/TV, panne VM complète et verrouillage
+client obligatoire restent non attestés. Cette recette n'est pas un pentest.
+
 | Brique | Déclaré / observé | Reste à attester |
 | --- | --- | --- |
 | LUKS, Secure Boot, TPM PIN | Déclaré ; boots réussis montrés par opérateur | État boot/masque effectif lors de chaque changement |

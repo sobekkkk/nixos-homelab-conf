@@ -157,6 +157,22 @@ vérifier, pas un résultat confirmé.
 
 ## Questions à résoudre avant le pentest
 
+### Extension passerelle privée, 2026-10-01
+
+- Une VM/appareil compromis peut abuser des droits Tailscale : revue d'ACL
+  externe toujours requise ; pas de scan élargi implicite de ces appareils.
+- Internet des clients sélectionnant l'exit node est limité à Mullvad. La
+  perte du VPN a bloqué les nouvelles connexions TCP IPv4/IPv6 testées ; ce
+  résultat n'atteste ni panne totale de VM ni toutes les interactions clientes.
+- Désélection manuelle, split tunneling ou DNS privé/DoH peuvent contourner
+  l'intention de politique cliente ; cette livraison n'installe aucun MDM.
+- L'hyperviseur et root hôte restent de confiance ; la VM n'est pas une
+  garantie contre une compromission de l'hôte ou une vulnérabilité QEMU.
+- Mullvad, Tailscale et les dépendances restent des tiers de confiance. La
+  clé WireGuard et l'identité Tailscale sont hors Git, donc à récupérer à part.
+- Une seule sortie/VM/hôte : pas d'HA, débit non garanti, pas de promesse de
+  contournement de toute censure ou restriction applicative.
+
 1. Le routeur expose-t-il une redirection, UPnP ou une connectivité IPv6 globale
    vers le serveur ?
 2. Comment la clé SSH et le compte GitHub du poste d'administration sont-ils

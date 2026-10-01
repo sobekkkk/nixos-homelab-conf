@@ -33,6 +33,15 @@ compte élargit le périmètre et doit être documenté avant son activation.
 
 ## Modèle de menaces et frontières de confiance
 
+Extension autorisée au 2026-10-01 : VM `privacy-gateway` avec Tailscale exit
+node, AdGuard et Mullvad. Sa frontière de routage est indépendante de Docker
+et de l'administration hôte. Le compte VM dispose du groupe kvm et d'un
+credential en lecture seule, pas du socket Docker. L'administrateur invité
+dispose de sudo sans mot de passe uniquement dans la VM. Exception SSH hôte
+pour sobek : forwarding local limité à 127.0.0.1:2222, aucune autre destination.
+Les tests ne garantissent pas anonymat absolu, tous protocoles ni toutes pannes.
+Voir les [limites et preuves](docs/PRIVACY_GATEWAY_VALIDATION.md).
+
 Les actifs principaux sont les données du volume chiffré, les droits `root`, la
 clé SSH d'administration, les secrets futurs des services, les clés Secure Boot
 et l'intégrité de la configuration Git/NixOS. L'historique de supervision et

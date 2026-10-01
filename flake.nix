@@ -17,6 +17,18 @@
       modules = [
         lanzaboote.nixosModules.lanzaboote
         ./hosts/homelab
+        ({ ... }: {
+          imports = [ ./modules/privacy-gateway-vm.nix ];
+          homelab.privacyGatewayVM.vmPackage =
+            self.nixosConfigurations.privacy-gateway.config.system.build.vm;
+        })
+      ];
+    };
+    nixosConfigurations.privacy-gateway = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ./hosts/privacy-gateway
+        (nixpkgs + "/nixos/modules/virtualisation/qemu-vm.nix")
       ];
     };
   };
