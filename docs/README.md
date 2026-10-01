@@ -31,6 +31,9 @@ Le code déclaré prévaut sur une description devenue obsolète.
 
 ## Maintenir le dossier
 
+Le [portail Homepage](HOMEPAGE.md) est préparé sur branches de revue ; son
+activation et ses accès doivent encore être validés par la recette dédiée.
+
 URL, port, image, montage, privilège ou dépendance changé : actualiser le guide
 et son contrôle. Nouvelle exception : décision motivée, risque, contrôle
 compensatoire et critère de sortie. Une correction dans Git reste « à retester »

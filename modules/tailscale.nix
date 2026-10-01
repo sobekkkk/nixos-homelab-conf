@@ -11,6 +11,7 @@
   networking.extraHosts = ''
     192.168.1.69 status.home.arpa
     192.168.1.69 netdata.home.arpa
+    192.168.1.69 homepage.home.arpa
   '';
 
   # L'interface ne devient pas globalement fiable : seuls SSH et les relais
@@ -20,6 +21,7 @@
     iifname "${config.services.tailscale.interfaceName}" tcp dport 443 accept comment "Portainer HTTPS from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8443 accept comment "Uptime Kuma HTTPS from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8444 accept comment "Netdata HTTPS from trusted tailnet"
+    iifname "${config.services.tailscale.interfaceName}" tcp dport 8445 accept comment "Homepage HTTPS from trusted tailnet"
   '';
 
   # Tailscale termine HTTPS avec le certificat du tailnet, puis relaie
@@ -66,6 +68,19 @@
       RemainAfterExit = true;
       ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8444 https+insecure://netdata.home.arpa:8444";
       ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8444 off";
+    };
+  };
+  # Port dédié : le Host du client ne doit pas sélectionner le vhost Kuma.
+  systemd.services.tailscale-homepage-serve = {
+    description = "Publish Homepage privately through Tailscale Serve";
+    requires = [ "tailscaled.service" ];
+    after = [ "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8445 https+insecure://homepage.home.arpa:8445";
+      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8445 off";
     };
   };
 }

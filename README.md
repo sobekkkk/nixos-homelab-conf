@@ -46,6 +46,7 @@ Vue logique ; les chemins réseau exacts sont dans [NETWORK.md](docs/NETWORK.md)
 | Diagnostiquer une panne | [Runbooks](docs/RUNBOOKS.md) |
 | Comprendre les métriques et alertes | [Supervision](docs/SUPERVISION.md) |
 | Ajouter un service proprement | [Contrat conteneurs](docs/CONTAINERS.md) |
+| Ajouter le portail privé des services (préparé, non activé) | [Homepage](docs/HOMEPAGE.md) |
 | Recréer la plateforme et inventorier son état | [Amorçage](docs/BOOTSTRAP.md), [données](docs/DATA.md) |
 | Examiner les frontières de confiance | [Politique](SECURITY.md), [menaces](docs/THREAT_MODEL.md) |
 | Retrouver les choix et preuves historiques | [Décisions](DECISIONS.md), [rapports](security/reports/README.md) |

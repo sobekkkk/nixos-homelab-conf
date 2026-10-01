@@ -301,3 +301,17 @@ persistée sont identiques (dw1g960133js7dar8lck17irv13nvxnj), services hôte
 actifs et sortie Mullvad confirmée. Pas de reboot hôte ni de validation TV
 revendiqués. Guide clients sans verrouillage MDM : une connexion Tailscale
 seule ne force pas l'exit node. Sauvegardes et états externes restent distincts.
+# 2026-10-01 — Portail Homepage privé (préparé)
+
+Homepage est un portail de liens, pas un nouveau monitoring. Réutiliser Caddy
+et ajouter un relais Tailscale dédié sur 8445 conserve les trois accès actuels.
+Pas de socket Docker, de widget à secrets ou de découverte automatique ;
+configuration applicative inline, image tag/digest, processus non-root et
+stockage éphémère borné. Allowed-hosts n'est pas une authentification : LAN de
+confiance et politique tailnet restent les frontières d'accès. Une auth
+applicative serait requise si ce périmètre devenait non fiable. Les ACL externes
+Tailscale ne sont pas changées par cette proposition.
+
+Publication sur branches uniquement avant approbation explicite des actions
+Docker, pare-feu et rebuild. Recette client et runtime à exécuter avant de
+revendiquer un déploiement fonctionnel. Sauvegardes toujours hors chantier.

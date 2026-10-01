@@ -68,3 +68,10 @@ Une attestation mentionne date, origine, commit, génération ou image, méthode
 résultat et limites. Ne pas recopier les secrets/preuves brutes.
 Un commit correctif remplace « déclaré » ; seul un retest documenté remplace
 « à attester ». Ne pas retoucher rétroactivement un rapport initial figé.
+# Extension Homepage — 2026-10-01
+
+Préparée, non déployée : image épinglée et YAML inline dans le dépôt apps,
+réutilisation Caddy, listener dédié 8445 et relais Tailscale déclarés. La
+validation Compose est statique ; aucun succès runtime ni accès client n'est
+revendiqué. Les branches nécessitent revue et approbation d'activation avant
+fusion dans main, qui peut déclencher le polling Portainer. Voir [HOMEPAGE.md](HOMEPAGE.md).
