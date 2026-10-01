@@ -9,6 +9,9 @@ test -z "$(git -c safe.directory="$repo" -C "$repo" status --porcelain --untrack
 }
 previous=$(readlink -f /run/current-system)
 test -x "$previous/bin/switch-to-configuration"
+test -z "$(docker ps --filter label=com.docker.compose.service=netv --format '{{.ID}}')" || {
+  echo 'Stop the NetV stack in Portainer before infrastructure testing/rollback.' >&2; exit 1;
+}
 rollback() {
   echo 'Local validation failed; restoring previous running generation.' >&2
   "$previous/bin/switch-to-configuration" test

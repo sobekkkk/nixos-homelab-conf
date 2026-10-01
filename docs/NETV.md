@@ -123,8 +123,9 @@ Avant mise à jour Caddy : activer l'ancien `switch-to-configuration test`.
 Après mise à jour : arrêter NetV dans Portainer, revenir Caddy et Homepage aux
 commits précédents, puis activer la génération précédente. Le vieux QEMU utilise
 SLiRP et reprend le port 2222 lorsque le relais de cette branche est arrêté.
-Les réseaux privés et règles de routage résiduels n'offrent pas de sortie NetV ;
-les nettoyer uniquement après vérification des endpoints, sans supprimer le
+Ne jamais laisser NetV actif pendant un rollback de ses protections hôte.
+Nettoyer les réseaux et règles résiduels uniquement après vérification des
+endpoints, sans supprimer le
 volume applicatif, la clé Mullvad ni le disque invité.
 
 ## Limites

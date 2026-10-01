@@ -53,6 +53,7 @@ let n = import ../lib/netv-network.nix; in
             docker network create --internal --subnet "$subnet" "$name" >/dev/null
           else
             docker network create --subnet "$subnet" --gateway ${n.egressHost} \
+              --aux-address privacy-gateway=${n.egressGuest} \
               --opt com.docker.network.bridge.name=${n.egressBridge} \
               --opt com.docker.network.bridge.enable_ip_masquerade=false "$name" >/dev/null
           fi
@@ -63,18 +64,18 @@ let n = import ../lib/netv-network.nix; in
       ensure_network netv-ingress ${n.ingressSubnet} true
       ensure_network netv-egress ${n.egressSubnet} false
       docker network inspect netv-egress | jq -e \
-        '.[0] | .Options["com.docker.network.bridge.name"] == "${n.egressBridge}" and .Options["com.docker.network.bridge.enable_ip_masquerade"] == "false" and .IPAM.Config[0].Gateway == "${n.egressHost}"' >/dev/null
+        '.[0] | .Options["com.docker.network.bridge.name"] == "${n.egressBridge}" and .Options["com.docker.network.bridge.enable_ip_masquerade"] == "false" and .IPAM.Config[0].Gateway == "${n.egressHost}" and .IPAM.Config[0].AuxiliaryAddresses["privacy-gateway"] == "${n.egressGuest}"' >/dev/null
       ip link show ${n.underlayBridge} >/dev/null 2>&1 || ip link add ${n.underlayBridge} type bridge
       ip address replace ${n.underlayHost}/30 dev ${n.underlayBridge}
       ip link set ${n.underlayBridge} up
       # Docker's FORWARD default is DROP. Permit only the guest WireGuard
       # underlay, not a general trusted-bridge exception. nft is stricter too.
-      iptables -N NETV-VM-TRANSIT 2>/dev/null || true
-      iptables -F NETV-VM-TRANSIT
-      iptables -A NETV-VM-TRANSIT -i ${n.underlayBridge} -s ${n.underlayGuest} -d ${n.endpoint} -p udp --dport ${toString n.endpointPort} -j ACCEPT
-      iptables -A NETV-VM-TRANSIT -o ${n.underlayBridge} -d ${n.underlayGuest} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-      iptables -A NETV-VM-TRANSIT -j RETURN
-      iptables -C DOCKER-USER -j NETV-VM-TRANSIT 2>/dev/null || iptables -I DOCKER-USER 1 -j NETV-VM-TRANSIT
+      iptables -w -N NETV-VM-TRANSIT 2>/dev/null || true
+      iptables -w -F NETV-VM-TRANSIT
+      iptables -w -A NETV-VM-TRANSIT -i ${n.underlayBridge} -s ${n.underlayGuest} -d ${n.endpoint} -p udp --dport ${toString n.endpointPort} -j ACCEPT
+      iptables -w -A NETV-VM-TRANSIT -o ${n.underlayBridge} -d ${n.underlayGuest} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+      iptables -w -A NETV-VM-TRANSIT -j RETURN
+      iptables -w -C DOCKER-USER -j NETV-VM-TRANSIT 2>/dev/null || iptables -w -I DOCKER-USER 1 -j NETV-VM-TRANSIT
       for pair in '${n.underlayTap} ${n.underlayBridge}' '${n.egressTap} ${n.egressBridge}'; do
         set -- $pair
         ip link show "$1" >/dev/null 2>&1 || ip tuntap add dev "$1" mode tap user privacy-gateway-vm

@@ -60,6 +60,10 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
+        assertion = cfg.endpointIPv4 == n.endpoint && cfg.endpointPort == n.endpointPort && cfg.mtu == 1420;
+        message = "Host underlay allowlist and guest Mullvad endpoint/MTU must agree; update NetV routing and MSS together.";
+      }
+      {
         assertion = cfg.guestConfirmed && config.networking.hostName == "privacy-gateway" && !config.boot.isContainer;
         message = "Privacy gateway must run in the explicitly confirmed dedicated privacy-gateway VM, never on homelab.";
       }
