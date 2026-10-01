@@ -12,6 +12,7 @@
     192.168.1.69 status.home.arpa
     192.168.1.69 netdata.home.arpa
     192.168.1.69 homepage.home.arpa
+    192.168.1.69 netv.home.arpa
   '';
 
   # L'interface ne devient pas globalement fiable : seuls SSH et les relais
@@ -22,6 +23,7 @@
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8443 accept comment "Uptime Kuma HTTPS from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8444 accept comment "Netdata HTTPS from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8445 accept comment "Homepage HTTPS from trusted tailnet"
+    iifname "${config.services.tailscale.interfaceName}" tcp dport 8446 accept comment "NetV HTTPS from trusted tailnet"
   '';
 
   # Tailscale termine HTTPS avec le certificat du tailnet, puis relaie
@@ -81,6 +83,18 @@
       RemainAfterExit = true;
       ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8445 https+insecure://homepage.home.arpa:8445";
       ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8445 off";
+    };
+  };
+  systemd.services.tailscale-netv-serve = {
+    description = "Publish NetV privately through Tailscale Serve";
+    requires = [ "tailscaled.service" ];
+    after = [ "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8446 https+insecure://netv.home.arpa:8446";
+      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8446 off";
     };
   };
 }

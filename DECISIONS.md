@@ -301,6 +301,41 @@ persistée sont identiques (dw1g960133js7dar8lck17irv13nvxnj), services hôte
 actifs et sortie Mullvad confirmée. Pas de reboot hôte ni de validation TV
 revendiqués. Guide clients sans verrouillage MDM : une connexion Tailscale
 seule ne force pas l'exit node. Sauvegardes et états externes restent distincts.
+# 2026-10-01 — NetV : liens TAP et sortie applicative isolée (préparé)
+
+Suite à la demande explicite du propriétaire : publier sur main dans les deux
+dépôts, pour conserver les références GitOps des stacks existants. Les réseaux
+ont déjà été activés en test et la sortie/DNS de la VM validés avant publication.
+Le polling peut redéployer Caddy et Homepage ; la création du stack NetV reste
+une action distincte dans Portainer. Pas de switch NixOS avant recette NetV.
+Un revert Git restaure les fichiers après redéploiement, pas les données ni la
+génération active. Arrêter NetV avant tout rollback de ses protections réseau.
+
+Réutiliser la VM, AdGuard et le tunnel Mullvad existants ; aucun nouveau profil
+ou identifiant VPN. Remplacer SLiRP par deux liens virtio/TAP : underlay dédié
+au seul endpoint WireGuard, et réseau applicatif dédié. Pas de Tailscale entre
+deux composants du même hôte. Caddy atteint NetV par un troisième réseau interne.
+Une politique source hôte n'affecte que NetV, avec drops nft indépendants du
+routage empêchant un fallback WAN. Conserver le bootstrap SSH loopback par socat.
+
+Choix débit : pas d'IA, Intel renderD128 seulement, VAAPI initial ; vérifier
+codec/remux et charge en recette, ne pas promettre un débit sans mesure. Le
+Wi-Fi hôte et l'upload distant restent des limites. Pas de gateway Xtream 8100
+en première livraison. `always` et CSP empêchent une lecture fournisseur directe
+depuis le navigateur, qui contournerait la sortie protégée du serveur.
+
+Image OCI figée par digest et révision plutôt qu'un tag de release inexistant.
+Runtime non-root/read-only sans NET_ADMIN ; initializer root sans réseau limité
+au volume propre. Pas de credentials IPTV dans Git. Désactiver la rétention
+stdout faute de redaction amont fiable ; contrepartie explicite : diagnostic
+applicatif réduit, santé et métriques restent disponibles. Aucun changement
+des ACL du tailnet, de la clé Mullvad, des routes des autres apps ou des backups.
+
+Activation locale sudo par le propriétaire, mode test avec restauration sur
+échec local. Branches avant recette ; pas de switch automatique, ni d'affirmation
+de fonctionnement end-to-end avant lecture et tests de coupure. Les métadonnées
+réseau prévues ne sont pas des résultats d'audit. Runbook : docs/NETV.md.
+
 # 2026-10-01 — Portail Homepage privé (préparé)
 
 Homepage est un portail de liens, pas un nouveau monitoring. Réutiliser Caddy

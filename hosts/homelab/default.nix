@@ -19,6 +19,7 @@
     ../../modules/auditing.nix
     ../../modules/maintenance.nix
     ../../modules/containers.nix
+    ../../modules/netv-network.nix
     ../../modules/security-snapshot.nix
   ];
 

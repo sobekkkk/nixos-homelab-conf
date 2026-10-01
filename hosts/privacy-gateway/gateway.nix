@@ -2,6 +2,7 @@
 # Active in test mode; see docs/PRIVACY_GATEWAY_VALIDATION.md for evidence.
 { config, lib, pkgs, ... }:
 let
+  n = import ../../lib/netv-network.nix;
   cfg = config.homelab.privacyGateway;
   endpoint = if cfg.endpointIPv4 == null then "0.0.0.0" else cfg.endpointIPv4;
   peerKey = if cfg.peerPublicKey == null then "" else cfg.peerPublicKey;
@@ -59,6 +60,10 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
+        assertion = cfg.endpointIPv4 == n.endpoint && cfg.endpointPort == n.endpointPort && cfg.mtu == 1420;
+        message = "Host underlay allowlist and guest Mullvad endpoint/MTU must agree; update NetV routing and MSS together.";
+      }
+      {
         assertion = cfg.guestConfirmed && config.networking.hostName == "privacy-gateway" && !config.boot.isContainer;
         message = "Privacy gateway must run in the explicitly confirmed dedicated privacy-gateway VM, never on homelab.";
       }
@@ -88,8 +93,14 @@ in
     systemd.network.enable = true;
     systemd.network.networks."10-underlay" = {
       matchConfig.Name = cfg.underlayInterface;
-      networkConfig = { DHCP = "ipv4"; IPv6AcceptRA = false; LinkLocalAddressing = "no"; };
-      dhcpV4Config = { UseDNS = false; UseNTP = false; UseRoutes = true; };
+      matchConfig.MACAddress = "52:54:00:24:02:02";
+      address = [ "${n.underlayGuest}/30" ];
+      networkConfig = { DHCP = "no"; IPv6AcceptRA = false; LinkLocalAddressing = "no"; Gateway = n.underlayHost; };
+    };
+    systemd.network.networks."20-netv" = {
+      matchConfig.MACAddress = "52:54:00:24:00:02";
+      address = [ "${n.egressGuest}/28" ];
+      networkConfig = { DHCP = "no"; IPv6AcceptRA = false; LinkLocalAddressing = "no"; };
     };
 
     # Native nft policy only: avoid implicit firewall/Tailscale chains changing
@@ -110,11 +121,14 @@ in
           iifname "tailscale0" udp dport 53 accept
           iifname "tailscale0" tcp dport { 22, 53, 443 } accept
           iifname "tailscale0" meta l4proto { icmp, ipv6-icmp } accept
+          iifname "apps0" ip saddr ${n.app} udp dport 53 accept
+          iifname "apps0" ip saddr ${n.app} tcp dport 53 accept
         }
         chain output {
           type filter hook output priority filter; policy drop;
           oifname "lo" accept
           oifname "tailscale0" ct state established,related accept
+          oifname "apps0" ip daddr ${n.app} ct state established,related accept
           # No generic established exception on underlay: a prior connection
           # must not become an accidental fallback if the tunnel disappears.
           oifname "${cfg.underlayInterface}" ip daddr ${endpoint} udp dport ${toString cfg.endpointPort} accept
@@ -125,6 +139,10 @@ in
         chain forward {
           type filter hook forward priority filter; policy drop;
           ct state invalid drop
+          iifname "apps0" ip saddr != ${n.app} drop
+          iifname "apps0" ip daddr { 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 } drop
+          iifname "apps0" oifname "${interface}" ip saddr ${n.app} accept
+          iifname "${interface}" oifname "apps0" ip daddr ${n.app} ct state established,related accept
           # No routing into LAN, another tailnet node or non-public addresses.
           iifname "tailscale0" ip daddr { 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 } drop
           iifname "tailscale0" ip6 daddr { ::/128, ::1/128, fc00::/7, fe80::/10, ff00::/8 } drop
@@ -134,6 +152,14 @@ in
         chain postrouting {
           type nat hook postrouting priority srcnat; policy accept;
           iifname "tailscale0" oifname "${interface}" masquerade
+          iifname "apps0" oifname "${interface}" ip saddr ${n.app} masquerade
+        }
+        chain netv_mss {
+          type filter hook forward priority mangle; policy accept;
+          # IPv4-only NetV path: avoid advertising a 1500-byte bridge MSS
+          # across the 1420-byte WireGuard link. Never raise a smaller MSS.
+          iifname "apps0" oifname "${interface}" ip saddr ${n.app} tcp flags & (syn | rst) == syn tcp option maxseg size > 1380 tcp option maxseg size set 1380
+          iifname "${interface}" oifname "apps0" ip daddr ${n.app} tcp flags & (syn | rst) == syn tcp option maxseg size > 1380 tcp option maxseg size set 1380
         }
       '';
     };
