@@ -4,6 +4,15 @@ Statut : **préparé sur branche, pas encore activé ni testé en lecture IPTV**
 Le compte IPTV et le compte administrateur NetV sont saisis par le propriétaire
 dans l'interface HTTPS, jamais dans Git ou dans une conversation.
 
+Prévalidation du 2026-10-01 : construction NixOS hôte et invité réussie
+(`jf346kvz0lfc0x2wy4rvaq0w7kcxd5d3` pour l'hôte), `bash -n` du script réussi,
+trois modèles Compose validés, Caddy 2.11.4 adapté sans erreur. Les deux
+rulesets générés passent `nft --check` dans la VM existante, **sans application**.
+Les fichiers networkd/link générés portent les MAC, adresses et noms attendus.
+Ces vérifications ne prouvent ni forwarding effectif ni accélération matérielle.
+L'hôte tourne toujours sur `g86n36zkfyd0g253f8aybkc93p0war8q` ; son sudo exige
+le mot de passe du propriétaire.
+
 ```mermaid
 flowchart LR
   Client[Windows / Android / Android TV] -->|LAN ou Tailscale HTTPS| Proxy[Caddy :8446]
@@ -116,6 +125,8 @@ abonnement enregistré. L'authentification applicative reste obligatoire.
 
 Les tests de coupure sont à conduire avant de saisir des identifiants IPTV.
 Ne pas imprimer `server_settings.json`, les URL sources, les clés ou les cookies.
+Préférer les URL HTTPS du fournisseur lorsqu'elles existent : Mullvad protège
+le trajet jusqu'à sa sortie, pas un trajet HTTP en clair après cette sortie.
 
 ## Retour arrière
 
