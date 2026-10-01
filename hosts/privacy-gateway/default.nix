@@ -1,12 +1,22 @@
 # Dedicated guest only. The QEMU module is supplied by the pinned evaluator.
 { lib, pkgs, ... }:
+let n = import ../../lib/netv-network.nix; in
 {
   imports = [ ./gateway.nix ./mullvad-profile.nix ];
   system.stateVersion = "26.05";
   homelab.privacyGateway = {
     enable = true;
     guestConfirmed = true;
-    bootstrapSSHAddress = "10.0.2.2";
+    bootstrapSSHAddress = n.underlayHost;
+    underlayInterface = "uplink0";
+  };
+  systemd.network.links."10-gateway-uplink" = {
+    matchConfig.MACAddress = "52:54:00:24:02:02";
+    linkConfig.Name = "uplink0";
+  };
+  systemd.network.links."10-gateway-netv" = {
+    matchConfig.MACAddress = "52:54:00:24:00:02";
+    linkConfig.Name = "apps0";
   };
   networking.usePredictableInterfaceNames = false;
   # Immutable appliance: rebuild on the host, never maintain a guest Nix DB.
@@ -21,12 +31,13 @@
     useNixStoreImage = true;
     writableStore = false;
     sharedDirectories = lib.mkForce { };
-    forwardPorts = [ {
-      from = "host";
-      host.address = "127.0.0.1";
-      host.port = 2222;
-      guest.port = 22;
-    } ];
+    forwardPorts = lib.mkForce [ ];
+    qemu.networkingOptions = lib.mkForce [
+      "-netdev tap,id=uplink,ifname=${n.underlayTap},script=no,downscript=no"
+      "-device virtio-net-pci,netdev=uplink,mac=52:54:00:24:02:02"
+      "-netdev tap,id=netv,ifname=${n.egressTap},script=no,downscript=no"
+      "-device virtio-net-pci,netdev=netv,mac=52:54:00:24:00:02"
+    ];
     qemu.options = [
       "-enable-kvm"
       "-qmp unix:/var/lib/privacy-gateway-vm/qmp.sock,server=on,wait=off"
