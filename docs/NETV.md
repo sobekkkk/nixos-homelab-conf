@@ -102,15 +102,16 @@ abonnement enregistré. L'authentification applicative reste obligatoire.
 3. Vérifier depuis le poste le bootstrap SSH invité, le handshake WireGuard,
    DNS AdGuard, l'accès Internet via exit node et l'accès SSH hôte.
 4. Dans Portainer, créer `netv-gitops`, dépôt `homelab-apps`, référence
-   `refs/heads/codex/netv`, chemin `apps/netv/compose.yaml`. Pas d'additional
+   `refs/heads/main`, chemin `apps/netv/compose.yaml`. Pas d'additional
    paths ; authentification Git limitée à Contents read si dépôt privé.
-5. Mettre à jour le stack Caddy/Kuma avec la même branche et son chemin habituel.
+5. Les stacks Caddy/Kuma et Homepage gardent leur référence `refs/heads/main`.
+   Leur polling GitOps applique les changements après le push approuvé.
    **Créer les réseaux hôte avant cette mise à jour**. Homepage vient après.
 6. Ouvrir NetV et créer immédiatement le compte administrateur. Ajouter soi-même
    les sources d'un abonnement autorisé. Aucun identifiant n'est nécessaire à
    la recette réseau initiale. Ne pas publier le gateway Xtream 8100.
-7. Exécuter la recette ci-dessous. Fusionner/persister seulement après succès,
-   puis remettre les stacks GitOps sur `refs/heads/main`.
+7. Exécuter la recette ci-dessous. Persister NixOS seulement après succès.
+   La fusion Git approuvée ne constitue pas une validation runtime.
 
 ## Recette avant switch
 

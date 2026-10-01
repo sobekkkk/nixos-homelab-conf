@@ -303,6 +303,14 @@ revendiqués. Guide clients sans verrouillage MDM : une connexion Tailscale
 seule ne force pas l'exit node. Sauvegardes et états externes restent distincts.
 # 2026-10-01 — NetV : liens TAP et sortie applicative isolée (préparé)
 
+Suite à la demande explicite du propriétaire : publier sur main dans les deux
+dépôts, pour conserver les références GitOps des stacks existants. Les réseaux
+ont déjà été activés en test et la sortie/DNS de la VM validés avant publication.
+Le polling peut redéployer Caddy et Homepage ; la création du stack NetV reste
+une action distincte dans Portainer. Pas de switch NixOS avant recette NetV.
+Un revert Git restaure les fichiers après redéploiement, pas les données ni la
+génération active. Arrêter NetV avant tout rollback de ses protections réseau.
+
 Réutiliser la VM, AdGuard et le tunnel Mullvad existants ; aucun nouveau profil
 ou identifiant VPN. Remplacer SLiRP par deux liens virtio/TAP : underlay dédié
 au seul endpoint WireGuard, et réseau applicatif dédié. Pas de Tailscale entre
