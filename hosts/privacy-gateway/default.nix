@@ -2,7 +2,7 @@
 { lib, pkgs, ... }:
 let n = import ../../lib/netv-network.nix; in
 {
-  imports = [ ./gateway.nix ./mullvad-profile.nix ];
+  imports = [ ./gateway.nix ./mullvad-profile.nix ./health.nix ];
   system.stateVersion = "26.05";
   homelab.privacyGateway = {
     enable = true;

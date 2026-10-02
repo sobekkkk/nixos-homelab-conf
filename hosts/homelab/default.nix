@@ -20,6 +20,7 @@
     ../../modules/maintenance.nix
     ../../modules/containers.nix
     ../../modules/netv-network.nix
+    ../../modules/privacy-gateway-monitor.nix
     ../../modules/security-snapshot.nix
   ];
 

@@ -14,6 +14,6 @@
   ingressSubnet = "172.30.241.0/28";
   routeTable = "203";
   rulePriority = "4900";
-  endpoint = "138.199.6.207";
+  endpoint = "185.213.155.73";
   endpointPort = 51820;
 }

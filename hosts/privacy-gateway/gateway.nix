@@ -117,6 +117,7 @@ in
           ct state established,related accept
           iifname "${cfg.underlayInterface}" udp sport 67 udp dport 68 accept
           ${lib.optionalString (cfg.bootstrapSSHAddress != null) ''iifname "${cfg.underlayInterface}" ip saddr ${cfg.bootstrapSSHAddress} tcp dport 22 accept''}
+          iifname "${cfg.underlayInterface}" ip saddr ${n.underlayHost} tcp dport 9105 accept
           iifname "${interface}" udp dport 41641 accept
           iifname "tailscale0" udp dport 53 accept
           iifname "tailscale0" tcp dport { 22, 53, 443 } accept
@@ -134,6 +135,7 @@ in
           oifname "${cfg.underlayInterface}" ip daddr ${endpoint} udp dport ${toString cfg.endpointPort} accept
           oifname "${cfg.underlayInterface}" udp sport 68 udp dport 67 accept
           ${lib.optionalString (cfg.bootstrapSSHAddress != null) ''oifname "${cfg.underlayInterface}" ip daddr ${cfg.bootstrapSSHAddress} tcp sport 22 ct state established accept''}
+          oifname "${cfg.underlayInterface}" ip daddr ${n.underlayHost} tcp sport 9105 ct state established accept
           oifname "${interface}" accept
         }
         chain forward {

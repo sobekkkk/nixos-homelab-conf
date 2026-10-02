@@ -357,3 +357,24 @@ Tailscale ne sont pas changées par cette proposition.
 Publication sur branches uniquement avant approbation explicite des actions
 Docker, pare-feu et rebuild. Recette client et runtime à exécuter avant de
 revendiquer un déploiement fonctionnel. Sauvegardes toujours hors chantier.
+
+# 2026-10-02 — Rotation Mullvad et alerte fonctionnelle (préparées)
+
+Adopter les métadonnées Secure Salmon fournies par le propriétaire et modifier
+ensemble l'allowlist hôte et le profil invité. La clé correspondante reste à
+installer interactivement ; aucune lecture ou copie du secret par l'agent.
+Construire avant rotation et activer en test uniquement. Conserver le blocage
+des fuites, le DNS via Mullvad et le chemin SSH de secours.
+
+La panne observée n'est pas une preuve de censure : tunnel sans handshake récent,
+DNS et Tailscale invités indisponibles, hôte actif. Les 17 alertes Netdata
+existantes ne couvraient pas ce chemin. Préparer une sonde fonctionnelle sur
+l'hôte avec Discord via l'uplink normal, trois échecs pour CRITICAL, deux succès
+pour RECOVERY, rappel 30 min, sans réparation automatique. Son endpoint invité
+retourne uniquement des booléens et reste réservé au bridge de gestion.
+
+Ne pas prétendre ajouter l'obfuscation à un export WireGuard. Une migration au
+daemon Mullvad officiel, avec compte provisionné hors Git et nouvelles règles
+réseau testées, est un chantier distinct. Aucun mode de secours direct-WAN.
+La perte de l'hôte/ISP exige encore une supervision indépendante hors hôte.
+Runbook et limites : docs/GATEWAY_RECOVERY_ALERTING.md.
