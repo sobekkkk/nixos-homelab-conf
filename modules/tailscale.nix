@@ -1,5 +1,29 @@
 { config, pkgs, ... }:
-
+let
+  # Every Serve writer uses the same lock: concurrent read-modify-write
+  # requests otherwise lose the ETag race at boot or during activation.
+  serve = pkgs.writeShellScript "private-tailscale-serve" ''
+    set -eu
+    export PATH=${pkgs.coreutils}/bin
+    if [ "$1" = --bg ]; then
+      ready=false
+      for attempt in $(seq 1 30); do
+        if ${pkgs.tailscale}/bin/tailscale status --json | ${pkgs.jq}/bin/jq -e '.BackendState == "Running"' >/dev/null 2>&1; then
+          ready=true; break
+        fi
+        sleep 2
+      done
+      [ "$ready" = true ] || { echo 'Tailscale is not Running; Serve not changed' >&2; exit 1; }
+    fi
+    exec 9>/run/lock/homelab-tailscale-serve.lock
+    ${pkgs.util-linux}/bin/flock -w 30 9
+    for attempt in $(seq 1 5); do
+      if timeout 10 ${pkgs.tailscale}/bin/tailscale serve "$@"; then exit 0; fi
+      sleep 2
+    done
+    exit 1
+  '';
+in
 {
   # Accès d'administration distant privé. Aucun port TCP/UDP Internet n'est
   # publié par cette configuration : Tailscale établit ses connexions sortantes
@@ -13,6 +37,8 @@
     192.168.1.69 netdata.home.arpa
     192.168.1.69 homepage.home.arpa
     192.168.1.69 netv.home.arpa
+    192.168.1.69 jellyfin.home.arpa
+    192.168.1.69 dispatcharr.home.arpa
   '';
 
   # L'interface ne devient pas globalement fiable : seuls SSH et les relais
@@ -24,6 +50,7 @@
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8444 accept comment "Netdata HTTPS from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8445 accept comment "Homepage HTTPS from trusted tailnet"
     iifname "${config.services.tailscale.interfaceName}" tcp dport 8446 accept comment "NetV HTTPS from trusted tailnet"
+    iifname "${config.services.tailscale.interfaceName}" tcp dport { 8447, 8448 } accept comment "Private media interfaces from tailnet"
   '';
 
   # Tailscale termine HTTPS avec le certificat du tailnet, puis relaie
@@ -37,8 +64,9 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=443 https+insecure://127.0.0.1:9443";
-      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=443 off";
+      TimeoutStartSec = 180;
+      ExecStart = "${serve} --bg --https=443 https+insecure://127.0.0.1:9443";
+      ExecStop = "${serve} --https=443 off";
     };
   };
 
@@ -52,8 +80,9 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8443 https+insecure://status.home.arpa:443";
-      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8443 off";
+      TimeoutStartSec = 180;
+      ExecStart = "${serve} --bg --https=8443 https+insecure://status.home.arpa:443";
+      ExecStop = "${serve} --https=8443 off";
     };
   };
 
@@ -68,8 +97,9 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8444 https+insecure://netdata.home.arpa:8444";
-      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8444 off";
+      TimeoutStartSec = 180;
+      ExecStart = "${serve} --bg --https=8444 https+insecure://netdata.home.arpa:8444";
+      ExecStop = "${serve} --https=8444 off";
     };
   };
   # Port dédié : le Host du client ne doit pas sélectionner le vhost Kuma.
@@ -81,8 +111,9 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8445 https+insecure://homepage.home.arpa:8445";
-      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8445 off";
+      TimeoutStartSec = 180;
+      ExecStart = "${serve} --bg --https=8445 https+insecure://homepage.home.arpa:8445";
+      ExecStop = "${serve} --https=8445 off";
     };
   };
   systemd.services.tailscale-netv-serve = {
@@ -93,8 +124,35 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8446 https+insecure://netv.home.arpa:8446";
-      ExecStop = "${pkgs.tailscale}/bin/tailscale serve --https=8446 off";
+      TimeoutStartSec = 180;
+      ExecStart = "${serve} --bg --https=8446 https+insecure://netv.home.arpa:8446";
+      ExecStop = "${serve} --https=8446 off";
+    };
+  };
+  systemd.services.tailscale-jellyfin-serve = {
+    description = "Publish Jellyfin privately through Tailscale Serve";
+    requires = [ "tailscaled.service" ];
+    after = [ "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      TimeoutStartSec = 210;
+      ExecStart = "${serve} --bg --https=8447 https+insecure://jellyfin.home.arpa:8447";
+      ExecStop = "${serve} --https=8447 off";
+    };
+  };
+  systemd.services.tailscale-dispatcharr-serve = {
+    description = "Publish Dispatcharr privately through Tailscale Serve";
+    requires = [ "tailscaled.service" ];
+    after = [ "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      TimeoutStartSec = 210;
+      ExecStart = "${serve} --bg --https=8448 https+insecure://dispatcharr.home.arpa:8448";
+      ExecStop = "${serve} --https=8448 off";
     };
   };
 }

@@ -11,6 +11,9 @@ assessment:
         - 9443
         - 8443
         - 8444
+        # Media migration: same authorised homelab, private interfaces only.
+        - 8447
+        - 8448
       approved_web_endpoints:
         - https://192.168.1.69:9443
         - https://192.168.1.69:443

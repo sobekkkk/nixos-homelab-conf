@@ -1,5 +1,8 @@
-{ config, pkgs, ... }:
-let n = import ../lib/netv-network.nix; in
+{ config, lib, pkgs, ... }:
+let
+  n = import ../lib/netv-network.nix;
+  appSet = "{ " + lib.concatStringsSep ", " (map (app: app.address) n.vpnApps) + " }";
+in
 {
   # Dedicated forwarding contract; a lost route must never fall back to WAN.
   networking.nftables.tables.netv-isolation = {
@@ -13,8 +16,8 @@ let n = import ../lib/netv-network.nix; in
       }
       chain forward {
         type filter hook forward priority -10; policy accept;
-        iifname "${n.egressBridge}" ip daddr ${n.app} ct state established,related accept
-        iifname "${n.egressBridge}" ip saddr != ${n.app} drop
+        iifname "${n.egressBridge}" ip daddr ${appSet} ct state established,related accept
+        iifname "${n.egressBridge}" ip saddr != ${appSet} drop
         iifname "${n.egressBridge}" ip daddr ${n.egressGuest} udp dport 53 accept
         iifname "${n.egressBridge}" ip daddr ${n.egressGuest} tcp dport 53 accept
         iifname "${n.egressBridge}" udp dport { 53, 853 } drop
@@ -62,6 +65,7 @@ let n = import ../lib/netv-network.nix; in
           '.[0] | .Driver == "bridge" and .Internal == $internal and .EnableIPv6 == false and .IPAM.Config[0].Subnet == $subnet' >/dev/null
       }
       ensure_network netv-ingress ${n.ingressSubnet} true
+      ensure_network media-ingress ${n.mediaIngressSubnet} true
       ensure_network netv-egress ${n.egressSubnet} false
       docker network inspect netv-egress | jq -e \
         '.[0] | .Options["com.docker.network.bridge.name"] == "${n.egressBridge}" and .Options["com.docker.network.bridge.enable_ip_masquerade"] == "false" and .IPAM.Config[0].Gateway == "${n.egressHost}" and .IPAM.Config[0].AuxiliaryAddresses["privacy-gateway"] == "${n.egressGuest}"' >/dev/null
@@ -84,12 +88,14 @@ let n = import ../lib/netv-network.nix; in
       done
       ip route replace default via ${n.egressGuest} dev ${n.egressBridge} table ${n.routeTable}
       # An identical rule may remain after a test activation; never accumulate it.
-      if ! ip -4 rule show | ${pkgs.gnugrep}/bin/grep -q '^${n.rulePriority}:.*from ${n.app} lookup ${n.routeTable}$'; then
-        if ip -4 rule show | ${pkgs.gnugrep}/bin/grep -q '^${n.rulePriority}:'; then
-          echo 'Policy priority already owned; refusing to overwrite it' >&2; exit 1
+      ${lib.concatMapStringsSep "\n" (app: ''
+      if ! ip -4 rule show | ${pkgs.gnugrep}/bin/grep -q '^${app.priority}:.*from ${app.address} lookup ${n.routeTable}$'; then
+        if ip -4 rule show | ${pkgs.gnugrep}/bin/grep -q '^${app.priority}:'; then
+          echo 'Policy priority ${app.priority} already owned; refusing to overwrite it' >&2; exit 1
         fi
-        ip -4 rule add priority ${n.rulePriority} from ${n.app}/32 lookup ${n.routeTable}
+        ip -4 rule add priority ${app.priority} from ${app.address}/32 lookup ${n.routeTable}
       fi
+      '') n.vpnApps}
     '';
     # Deliberately retain private links on stop: there is no fallback route and
     # deleting a Docker network with active endpoints would be destructive.
