@@ -5,6 +5,13 @@ NetV reste intact. La génération active précédente reste la référence jusq
 validation. Ce document n'atteste ni le contournement d'un blocage fournisseur,
 ni une garantie contre les mesures de censure ou la détection d'un VPN.
 
+Validation de préparation : parsing des quatre fichiers Nix modifiés, `bash -n`
+du script opérateur, `docker compose config --quiet` des définitions média et
+Caddy, et évaluation de la dérivation homelab réussis sur le serveur, sans
+sudo, build, redémarrage ou activation. Les règles guest évaluées contiennent
+exactement .240.10/.11/.12/.13 et une sortie/NAT uniquement wg-mullvad.
+La dérivation évaluée ne constitue pas une preuve de construction réussie.
+
 ## Architecture et flux
 
 ```text
