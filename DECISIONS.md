@@ -378,3 +378,10 @@ daemon Mullvad officiel, avec compte provisionné hors Git et nouvelles règles
 réseau testées, est un chantier distinct. Aucun mode de secours direct-WAN.
 La perte de l'hôte/ISP exige encore une supervision indépendante hors hôte.
 Runbook et limites : docs/GATEWAY_RECOVERY_ALERTING.md.
+
+Recette du 2 octobre : activation test corrigée, quatre contrôles fonctionnels
+verts, notification RECOVERY acceptée par Discord à 14 h 37 CEST et accès via
+l'exit node confirmé par le propriétaire sur Windows. Intégrer cette source
+dans /etc/nixos avant tout switch ; ne pas ressaisir la clé. Un test complet
+de panne/retour avec le nouveau profil et la validation après reboot restent
+distincts de cette recette. Les sauvegardes restent hors chantier.

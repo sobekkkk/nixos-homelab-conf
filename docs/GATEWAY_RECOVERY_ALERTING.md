@@ -18,6 +18,21 @@ not produce JSON tracebacks. The corrected unit still requires test activation.
 
 ## Prepared change (not deployed/validated until owner rotates key)
 
+### Test activation validated on 2026-10-02
+
+The owner rotated the key locally and activated the corrected test generation
+`/nix/store/iy83cwdm21imiq56zj8fm4zlv03vpw7p-nixos-system-homelab-26.05.20260927.cf5e765`.
+Host inspection returned `ok: true` with handshake, DNS, Mullvad exit and
+Tailscale checks all true. The timer was active and Discord accepted the
+RECOVERY notification at 14:37 CEST after two healthy observations. The owner
+also confirmed Internet access through the exit node from Windows.
+
+These results validate this test activation, not boot persistence, a fresh
+VPN-down alert test, IPv6 leak resistance, throughput or NetV media playback.
+Before a boot switch, synchronize this reviewed source into `/etc/nixos`;
+rebuilding the previous checkout would restore the obsolete public profile
+while leaving the rotated runtime key installed. Do not rotate the key again.
+
 Secure Salmon public metadata replaces Huge Hare. Host and guest allowlists
 change together. Private key stays root-owned 0600 outside Git/Nix. Run the
 reviewed `scripts/privacy-gateway/rotate-key-and-test.sh` interactively as root.
