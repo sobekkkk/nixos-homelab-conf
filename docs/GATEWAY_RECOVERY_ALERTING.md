@@ -9,6 +9,13 @@ guest tunnel functionality. No evidence establishes censorship as the cause.
 An unreachable server, revoked device, expired subscription or blocked path
 remain candidates. A past Discord test does not prove incident coverage.
 
+After owner test activation on 2026-10-02, the new peer responded and the guest
+reported Mullvad exit `de-fra-wg-001`; Tailscale returned online. DNS resolution
+worked, but the initial health unit mistakenly used `pkgs.bind` instead of the
+separate `pkgs.dig` output, causing a false `dns` failure. The follow-up fixes
+the executable dependency. Startup connection refusals are retried and should
+not produce JSON tracebacks. The corrected unit still requires test activation.
+
 ## Prepared change (not deployed/validated until owner rotates key)
 
 Secure Salmon public metadata replaces Huge Hare. Host and guest allowlists

@@ -32,7 +32,14 @@ systemctl is-active --quiet privacy-gateway-vm.service
 ready=false
 for attempt in $(seq 1 12); do
     if curl -fsS --max-time 35 http://172.30.242.2:9105/health | \
-        "$python_bin" -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("ok") is True else 1)'; then
+        "$python_bin" -c '
+import json,sys
+try:
+    healthy = json.load(sys.stdin).get("ok") is True
+except (ValueError, AttributeError):
+    healthy = False
+sys.exit(0 if healthy else 1)
+'; then
         ready=true
         break
     fi
